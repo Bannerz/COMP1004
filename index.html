@@ -3,65 +3,17 @@
   <head>
     <title>Site title</title>
     <link rel="icon" type="image/x-icon" href="favicon.ico">
-    <style>
-      html {
-        margin: 0;
-        padding: 0;
-      }
-      body {
-        font-family: Helvetica, Arial, sans-serif;
-        margin: 0;
-        padding: 0;
-      }
-      .header {
-        width: 100%;
-        height: 10vh;
-        background: #f6f6f6;
-        text-align: center;
-        position: relative;
-        top: 0;
-        padding: 0;
-        margin: 0;
-        line-height: 10vh;
-      }
-      h1 {
-        padding: 0;
-        margin: 0;
-      }
-      table {
-        border-style: solid;
-      }
-      .pageBody {
-        margin: 0 auto;
-        width: 70%;
-        background: #6f6f6f;
-        padding: 10px;
-      }
-      .btn {
-        border-style: solid;
-        border-radius: 10px;
-        padding: 10px;
-        box-shadow: 5px;
-        text-decoration: none;
-        transition: 1s;
-        background: #b5e0af;
-        color: #000000;
-      }
-      .btn:hover {
-        background: white;
-      }
-    </style>
-    <script>
-
-    </script>
+    <link rel="stylesheet" href="style/style.css" type="text/css">
+    <script src="script.js"></script>
   </head>
-  <body>
+  <body class="light_mode" id="body_bg">
     <div class="header">
       <h1>COMP1004 Website</h1>
+      <button onclick="toggleDarkMode()">Toggle Dark Mode</button>
     </div>
     <br>
-    <div class="pageBody">
-      <p>This is a short paragraph about the simple website I am creating for the COMP1004 Lab excerise. I could not think of a topic so I am just using this to fulfil the requirements. I have previous experience with HTML and CSS so I do not anticipate many issues. </p>
+    <div class="pageBody" id="pageBody">
+      <p>This is a short paragraph about the simple website I am creating for the COMP1004 Lab excerise. I could not think of a topic so I am just using this to fulfil the requirements. I have previous experience with HTML and CSS so I do not anticipate many issues. I am not, however, a designer so my designs are not very good.</p>
       <br>
       <br>
       <p><a href="https://github.com/Bannerz/COMP1004" title="My Github Repo" target="_blank">Here</a> is a hyperlink to my github repo for this page.</p>
@@ -73,7 +25,7 @@
       <p>This is <b>prestyled</b> based on <i>OS/Browser</i></p>
       <br>
       <p>Here is an <b>image</b></p>
-      <img src="ENIAC-changing_a_tube.jpg" title="An image" alt="ENIAC Changing a tube" width="70%" height="auto" />
+      <img src="ENIAC-changing_a_tube.jpg" title="An image" alt="ENIAC Changing a tube" class="home_image" />
       <br>
       <br >
       <p>Tables are obsolete</p>
@@ -84,14 +36,14 @@
           <th>Table Header 3</th>
         </tr>
         <tr>
-          <td>Table content row 1 col 1</td>
-          <td>Table content row 1 col 2</td>
-          <td>Table content row 1 col 3</td>
+          <td>Content</td>
+          <td>Content</td>
+          <td>Content</td>
         </tr>
         <tr>
-          <td>Table content row 2 col 1</td>
-          <td>Table content row 2 col 2</td>
-          <td>Table content row 2 col 3</td>
+        <td>Content</td>
+        <td>Content</td>
+        <td>Content</td>
         </tr>
       </table>
       <br>
@@ -101,7 +53,19 @@
         <li>List item 2</li>
         <li>List item 3</li>
       </ul>
+      <br>
+      <br>
+      <div class="hideUnhide" id="hideDiv" style="display:block;">
+        <p>This div will be hidden if you click the button below</p>
+      </div>
+      <br>
+      <button onClick="showHtmlDiv()">Click me</button>
     </div>
+    <br>
 
+    <br>
+    <br>
+    <br>
+    <br>
   </body>
 </html>
