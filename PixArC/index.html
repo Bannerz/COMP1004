@@ -1,0 +1,47 @@
+<!<!DOCTYPE html>
+<html>
+  <head>
+    <title>PixArC | Pixel Art Creator</title>
+    <link rel="stylesheet" href="style/style.css" type="text/css" />
+  </head>
+  <body onload="">
+    <div class="mainHeader">
+      <h1 class="mainTitle">Pix/Ar/C</h1>
+    </div>
+    <div class="content">
+      <div class="toolBar">
+        <h1 class="panelTitle">Tool Bar</h1>
+          <br>
+          <br>
+        <label>Width (px):</label>
+          <br>
+        <input type="number" id="widthInput" min="1" value="16">
+          <br>
+        <label>Height (px):</label>
+          <br>
+        <input type="number" id="heightInput" min="1" value="16">
+          <br>
+          <br>
+        <button id="generateBtn">Generate Canvas</button>
+      </div>
+      <div class="drawCanv">
+        <h1 class="panelTitle">Drawing Canvas</h1>
+        <br>
+        <canvas id="pixelCanvas"></canvas>
+        <script src="pixarc.js" type="text/javascript" defer></script>
+
+      </div>
+      <div class="colourPal">
+        <h1 class="panelTitle"> Colour Palette</h1>
+          <br>
+          <br>
+        <label>Colour:</label>
+          <br>
+        <input type="color" id="colourPicker" value="#000000">
+      </div>
+    </div>
+    <div class="mainFooter">
+
+    </div>
+  </body>
+</html>
