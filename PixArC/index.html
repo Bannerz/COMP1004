@@ -1,4 +1,4 @@
-<!<!DOCTYPE html>
+<!DOCTYPE html>
 <html>
   <head>
     <title>PixArC | Pixel Art Creator</title>
@@ -13,11 +13,11 @@
         <h1 class="panelTitle">Tool Bar</h1>
           <br>
           <br>
-        <label>Width (px):</label>
+        <label for="widthInput">Width (px):</label>
           <br>
         <input type="number" id="widthInput" min="1" value="16">
           <br>
-        <label>Height (px):</label>
+        <label for="heightInput">Height (px):</label>
           <br>
         <input type="number" id="heightInput" min="1" value="16">
           <br>
@@ -28,20 +28,28 @@
         <h1 class="panelTitle">Drawing Canvas</h1>
         <br>
         <canvas id="pixelCanvas"></canvas>
+        <br>
+        <button id="undo">Undo</button>
+        <button id="redo">Redo</button>
+        <button id="downloadBtn">Download as PNG</button>
         <script src="pixarc.js" type="text/javascript" defer></script>
-
       </div>
       <div class="colourPal">
         <h1 class="panelTitle"> Colour Palette</h1>
           <br>
           <br>
-        <label>Colour:</label>
-          <br>
+        <label for="colourPicker">Colour:</label>
         <input type="color" id="colourPicker" value="#000000">
+          <br>
+        <label for="alphaSlider">Alpha:</label>
+        <input type="range" id="alphaSlider" min="0" max="1" step="0.01" value="1">
+          <br>
+        <span id="rgbaDisplay"></span>
+          <br>
+        <div id="colourHistory" style="display: flex; margin-top: 10px;"></div>
       </div>
     </div>
     <div class="mainFooter">
-
     </div>
   </body>
 </html>
