@@ -3,6 +3,11 @@
   <head>
     <title>PixArC | Pixel Art Creator</title>
     <link rel="stylesheet" href="style/style.css" type="text/css" />
+    <script>
+      window.onbeforeunload = function() {
+             return "Are you sure you want to leave this page? Changes may not be saved!";
+         }
+    </script>
   </head>
   <body onload="">
     <div class="mainHeader">
@@ -23,15 +28,32 @@
           <br>
           <br>
         <button id="generateBtn">Generate Canvas</button>
+          <br>
+          <br>
+        <button id="paintBtn">Paint</button>
+        <button id="eraseBtn">Eraser</button>
+          <br>
+        <label for="brushSize">Brush Size: </label>
+          <br>
+        <input type="range" id="brushSize" min="1" max="20" value="1" />
+        <span id="brushSizeValue">1</span>
+          <br>
+          <br>
+        <button id="gridToggleBtn">Toggle Grid</button>
       </div>
       <div class="drawCanv">
         <h1 class="panelTitle">Drawing Canvas</h1>
-        <br>
+          <br>
         <canvas id="pixelCanvas"></canvas>
-        <br>
+          <br>
         <button id="undo">Undo</button>
         <button id="redo">Redo</button>
         <button id="downloadBtn">Download as PNG</button>
+          <!--<br>
+          <br>
+        <button id="saveBtn">Save state</button>
+        <button id="loadBtn">Load state</button> -->
+
         <script src="pixarc.js" type="text/javascript" defer></script>
       </div>
       <div class="colourPal">
