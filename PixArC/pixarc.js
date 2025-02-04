@@ -621,4 +621,11 @@ https://stackoverflow.com/questions/10671174/changing-button-text-onclick
 https://www.w3schools.com/jsref/jsref_random.asp
 https://www.geeksforgeeks.org/how-to-create-keyboard-shortcuts-in-javascript/
 https://stackoverflow.com/questions/8126623/downloading-canvas-element-to-an-image
+https://www.youtube.com/watch?v=qOoZXaVN5Kk
+https://www.tutorialspoint.com/html5/canvas_states.htm
+https://stackoverflow.com/questions/20507534/how-to-save-and-load-html5-canvas-to-from-localstorage
+https://stackoverflow.com/questions/3665115/how-to-create-a-file-in-memory-for-user-to-download-but-not-through-server
+https://harrisonmilbradt.com/articles/canvas-panning-and-zooming
+https://stackoverflow.com/questions/38142308/canvas-drag-on-mouse-movement
+https://plnkr.co/edit/j8QCxwDzXJZN2DKszKwm?preview
 */
