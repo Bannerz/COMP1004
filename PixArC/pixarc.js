@@ -15,6 +15,7 @@ const eraseBtn = document.getElementById("eraseBtn");
 const saveBtn = document.getElementById("saveBtn");
 const loadBtn = document.getElementById("loadBtn");
 const gridToggleBtn = document.getElementById("gridToggleBtn");
+const currentTool = document.getElementById("currentTool");
 const ctx = canvas.getContext("2d");
 
 //colour picker with alpha set up
@@ -43,20 +44,22 @@ let mouse = { x: 0, y: 0 };
 let previous = { x: 0, y: 0 };
 let gridWidth, gridHeight, cellSize;
 let isDrawing = false;
-let showGrid = true; // Flag to control grid visibility
-
+let showGrid = true; //flag to control grid visibility
 
 //tool functions listeners
 paintBtn.addEventListener("click", () => {
   isPainting = true;
   isErasing = false;
   console.log("Paint mode activated");
+  currentTool.innerHTML = "Current tool: paint"; //change button text
 });
 
 eraseBtn.addEventListener("click", () => {
   isPainting = false;
   isErasing = true;
   console.log("Erase mode activated");
+  currentTool.innerHTML = "Current tool: eraser"; //change button text
+
 });
 
 //redraw the canvas (grid and paths)
@@ -76,13 +79,11 @@ function toggleGrid() {
 
 gridToggleBtn.addEventListener("click", toggleGrid);
 
-
 //update brush size when slider is adjusted
 brushSizeSlider.addEventListener("input", (e) => {
   brushSize = parseInt(e.target.value, 10);
   brushSizeValue.textContent = brushSize;
 });
-
 
 //resize canvas
 function resizeCanvas() {
@@ -132,7 +133,6 @@ function updateColourHistory(newColour) {
   }
 }
 
-
 //fill a pixel
 function fillPixel(x, y, colour) {
   const r = parseInt(colour.slice(1, 3), 16);
@@ -144,49 +144,57 @@ function fillPixel(x, y, colour) {
   ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
 }
 
+function getTransformedMousePos(e) {
+  //position and dimensions relative to the viewport
+  const rect = canvas.getBoundingClientRect();
+
+  //calc the mouse position in canvas coords considering the pan and scale
+  const mouseX = (e.clientX - rect.left - panX) / scale;
+  const mouseY = (e.clientY - rect.top - panY) / scale;
+
+  //return the transformed mouse position, rounding to the nearest grid cell
+  // divinding by cell size allows us to get grid-based coordinates
+  return { x: Math.floor(mouseX / cellSize), y: Math.floor(mouseY / cellSize) };
+}
+
+
+
 //draw pixel from mouse event
 function drawPixelFromEvent(e, colour) {
-  const rect = canvas.getBoundingClientRect();
-  const mouseX = e.clientX - rect.left;
-  const mouseY = e.clientY - rect.top;
+  //get the mouse position relative to the canvas after transformations
+  const { x, y } = getTransformedMousePos(e);
 
-  const centreX = Math.floor(mouseX / cellSize);
-  const centreY = Math.floor(mouseY / cellSize);
+  //check if the mouse position is within the grid boundaries
+  if (x >= 0 && x < gridWidth && y >= 0 && y < gridHeight) {
+    const radius = Math.floor(brushSize / 2); //define the brush radius based on brush size
 
-  //calculate the range of cells to fill based on brush size
-  const radius = Math.floor(brushSize / 2);
-  for (let x = centreX - radius; x <= centreX + radius; x++) {
-    for (let y = centreY - radius; y <= centreY + radius; y++) {
-      //check if the cell is within bounds
-      if (x >= 0 && x < canvas.width / cellSize && y >= 0 && y < canvas.height / cellSize) {
-        const dx = x - centreX;
-        const dy = y - centreY;
-        if (dx * dx + dy * dy <= radius * radius) {
-          //inside the circular brush area
-          if (isErasing) {
-            //clear the pixel to make it transparent
-            ctx.clearRect(x * cellSize, y * cellSize, cellSize, cellSize);
+    //loop through the brush area around the mouse position
+    for (let dx = -radius; dx <= radius; dx++) {
+      for (let dy = -radius; dy <= radius; dy++) {
+        const px = x + dx; //calculate pixel position in x
+        const py = y + dy; //calculate pixel position in y
 
-            if (showGrid) {
-              //redraw the grid line for erased cell
-              ctx.strokeStyle = "#ddd";
-              ctx.strokeRect(x * cellSize, y * cellSize, cellSize, cellSize);
+        //ensure pixel is within grid boundaries
+        if (px >= 0 && px < gridWidth && py >= 0 && py < gridHeight) {
+          //check if the pixel falls within the circular brush area
+          if (dx * dx + dy * dy <= radius * radius) {
+            //if erasing, clear the pixel and update the points array
+            if (isErasing) {
+              ctx.clearRect(px * cellSize, py * cellSize, cellSize, cellSize);
+              //optionally draw the grid lines if enabled
+              if (showGrid) ctx.strokeRect(px * cellSize, py * cellSize, cellSize, cellSize);
+              points.push({ x: px, y: py, type: "erase" });
+            } else {
+              //if painting, fill the pixel with the selected color and update points array
+              fillPixel(px, py, colour);
+              points.push({ x: px, y: py, type: "paint", colour });
             }
-
-            //save eraser action to paths
-            points.push({ x, y, type: "erase" });
-          } else {
-            //fill the pixel normally
-            fillPixel(x, y, colour);
-            points.push({ x, y, type: "paint", colour });
           }
         }
       }
     }
   }
 }
-
-
 
 //mouse events
 canvas.addEventListener("mousedown", (e) => {
@@ -229,8 +237,6 @@ canvas.addEventListener("mouseup", () => {
   }
 });
 
-
-
 //stop drawing when mouse leaves the canvas
 canvas.addEventListener("mouseleave", () => {
   isDrawing = false;
@@ -256,7 +262,6 @@ function addColourToHistory(colour) {
     colourHistoryContainer.appendChild(colourBox);
   }
 }
-
 
 //check if brushSizeValue exists
 brushSizeSlider.addEventListener("input", (e) => {
@@ -314,8 +319,6 @@ function redrawPaths() {
   });
 }
 
-
-
 //mouse position detector
 function oMousePos(canvas, evt) {
   const ClientRect = canvas.getBoundingClientRect();
@@ -351,7 +354,6 @@ redoButton.addEventListener("click", Redo);
 window.addEventListener("resize", () => {
   if (gridWidth && gridHeight) resizeCanvas();
 });
-
 
 //update RGBA colour
 function updateRGBAColour() {
@@ -396,10 +398,12 @@ downloadBtn.addEventListener("click", () => {
   downloadLink.href = imageData;
   downloadLink.download = `PixArC_${gridWidth}x${gridHeight}_${Math.floor((Math.random() * 100000) + 1)}.png`; //add random number to file name
   downloadLink.click();
+  console.log("File downloaded");
+  alert("File downloaded!");
 });
 
-
 //keyboard shortcuts
+//clear
 document.addEventListener("keydown", (e) => {
   if (e.key === "c" || e.key === "C") {
     clearCanvas();
@@ -407,17 +411,32 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
+//undo
 document.addEventListener("keydown", (e) => {
   if (e.key === "ArrowLeft") {
     Undo();
   }
 });
 
+//redo
 document.addEventListener("keydown", (e) => {
   if (e.key === "ArrowRight") {
     Redo();
   }
 });
+
+//hide show help menu
+function toggleHelp() {
+  console.log("help toggled");
+
+  var helpDisp = document.getElementById("helpWin");
+
+  if (helpDisp.style.display === "none") {
+    helpDisp.style.display = "block";
+  } else {
+    helpDisp.style.display = "none";
+  }
+}
 
 //function to restore colour history on load
 function restoreColourHistory() {
@@ -439,7 +458,7 @@ function restoreColourHistory() {
   });
 }
 
-//function to save the canvas state
+//save the canvas state
 saveBtn.addEventListener("click", () => {
   const state = {
     gridWidth,
@@ -454,21 +473,21 @@ saveBtn.addEventListener("click", () => {
     brushSize,
   };
 
-  const stateJSON = JSON.stringify(state);
-  const blob = new Blob([stateJSON], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
+  const stateJSON = JSON.stringify(state); //convert state to JSON format
+  const blob = new Blob([stateJSON], { type: "application/json" }); //create the blob using stateJSON and define as JSON file
+  const url = URL.createObjectURL(blob); //create the url for download
 
-  //create download link
+  //create virtual download link
   const a = document.createElement("a");
   a.href = url;
-  a.download = `PixArc_${gridWidth}x${gridHeight}_Canvas_State_${Math.floor((Math.random() * 100000) + 1)}.json`;
+  a.download = `PixArc_${gridWidth}x${gridHeight}_Canvas_State_${Math.floor((Math.random() * 100000) + 1)}.json`; //random-ish file name
   a.click();
 
-  URL.revokeObjectURL(url);
-  console.log("Canvas state saved:", state);
+  URL.revokeObjectURL(url); //release memory and resources once done using it
+  console.log("Canvas state saved:", state); //print to console
 });
 
-//function to load the canvas state
+//load the canvas state
 loadBtn.addEventListener("click", () => {
   const input = document.createElement("input");
   input.type = "file";
@@ -521,6 +540,76 @@ loadBtn.addEventListener("click", () => {
 
   input.click();
 });
+
+//zoom and pan
+//variabels for zoom and pan feature
+let scale = 1;
+let panX = 0;
+let panY = 0;
+let isPanning = false;
+let startX, startY;
+
+//apply transformations
+function redrawTransformed() {
+  ctx.setTransform(scale, 0, 0, scale, panX, panY); //apply zoom & pan
+  ctx.clearRect(-panX / scale, -panY / scale, canvas.width / scale, canvas.height / scale);
+  redrawCanvas(); //redraw grid and drawings
+}
+
+//zoom functionality with mouse wheel
+canvas.addEventListener("wheel", (e) => {
+  e.preventDefault();
+  const zoomFactor = 1.1;
+  const mouseX = e.offsetX;
+  const mouseY = e.offsetY;
+  const zoomIn = e.deltaY < 0;
+
+  //new scale
+  const newScale = zoomIn ? scale * zoomFactor : scale / zoomFactor;
+
+  //stop over zooming
+  if (newScale < 0.5 || newScale > 5) return;
+
+  //keep zoom centered around mouse
+  panX = mouseX - ((mouseX - panX) * newScale) / scale;
+  panY = mouseY - ((mouseY - panY) * newScale) / scale;
+  scale = newScale;
+
+  redrawTransformed();
+});
+
+//shift key for panning activation
+canvas.addEventListener("mousedown", (e) => {
+  if (e.shiftKey) {
+    isPanning = true;
+    startX = e.clientX - panX;
+    startY = e.clientY - panY;
+    canvas.style.cursor = "grab"; //cursor to indicate panning
+  }
+});
+
+//pan with the mouse
+canvas.addEventListener("mousemove", (e) => {
+  if (isPanning) {
+    panX = e.clientX - startX;
+    panY = e.clientY - startY;
+    redrawTransformed();
+  }
+});
+
+//stop panning
+canvas.addEventListener("mouseup", () => {
+  isPanning = false;
+  canvas.style.cursor = "default";
+});
+
+//stop panning if mouse leaves canvas
+canvas.addEventListener("mouseleave", () => {
+  isPanning = false;
+  canvas.style.cursor = "default";
+});
+
+
 
 /*
 credits and sources:

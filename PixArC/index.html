@@ -8,10 +8,15 @@
              return "Are you sure you want to leave this page? Changes may not be saved!";
          }
     </script>
+    <link rel="shortcut icon" href="favicon.ico" type="image/vnd.microsoft.icon" />
+    <link rel="icon" href="favicon.ico" type="image/vnd.microsoft.icon" />
   </head>
   <body onload="">
     <div class="mainHeader">
       <h1 class="mainTitle">Pix/Ar/C</h1>
+      <button class="helpBtn" titlel="Click me for a tutorial or help" onclick="toggleHelp()">
+
+      </button>
     </div>
     <div class="content">
       <div class="toolBar">
@@ -40,6 +45,9 @@
           <br>
           <br>
         <button id="gridToggleBtn">Toggle Grid</button>
+          <br>
+          <br>
+        <p id="currentTool">Current tool: paint</p>
       </div>
       <div class="drawCanv">
         <h1 class="panelTitle">Drawing Canvas</h1>
@@ -49,11 +57,12 @@
         <button id="undo">Undo</button>
         <button id="redo">Redo</button>
         <button id="downloadBtn">Download as PNG</button>
-          <!--<br>
+          <br>
           <br>
         <button id="saveBtn">Save state</button>
-        <button id="loadBtn">Load state</button> -->
-
+        <button id="loadBtn">Load state</button>
+          <br>
+          <br>
         <script src="pixarc.js" type="text/javascript" defer></script>
       </div>
       <div class="colourPal">
@@ -70,6 +79,10 @@
           <br>
         <div id="colourHistory" style="display: flex; margin-top: 10px;"></div>
       </div>
+    </div>
+    <div class="helpWindow" id="helpWin" style="display: none;">
+      <button class="closeButton" id="closeBtn" onclick="toggleHelp()">X</button>
+      <p>Hello, this is where help will go.</p>
     </div>
     <div class="mainFooter">
     </div>
