@@ -16,6 +16,10 @@ const saveBtn = document.getElementById("saveBtn");
 const loadBtn = document.getElementById("loadBtn");
 const gridToggleBtn = document.getElementById("gridToggleBtn");
 const currentTool = document.getElementById("currentTool");
+const resetView = document.getElementById("resetView");
+const alertText = document.getElementById("alertText");
+const secondTextWidth = document.getElementById("secondTextWidth");
+const secondTextHeight = document.getElementById("secondTextHeight");
 const ctx = canvas.getContext("2d");
 
 //colour picker with alpha set up
@@ -105,18 +109,72 @@ function resizeCanvas() {
 
 //generate a new canvas grid
 generateBtn.addEventListener("click", () => {
-  gridWidth = parseInt(widthInput.value);
-  gridHeight = parseInt(heightInput.value);
-  pathsry = []; //clear previous paths
+  let originalWidth = parseInt(widthInput.value);
+  let originalHeight = parseInt(heightInput.value);
+
+  let inputWidth = originalWidth;
+  let inputHeight = originalHeight;
+
+  //ensure values are within the allowed range
+  if (inputWidth < 1) {
+    inputWidth = 1;
+    secondTextWidth.innerHTML = "Canvas width resized to minimum.";
+  }
+  if (inputHeight < 1) {
+    inputHeight = 1;
+    secondTextHeight.innerHTML = "Canvas height resized to minimum.";
+  }
+  if (inputWidth > 500) {
+    inputWidth = 500;
+    secondTextWidth.innerHTML = "Canvas width resized to maximum.";
+  }
+  if (inputHeight > 500) {
+    inputHeight = 500;
+    secondTextHeight.innerHTML = "Canvas height resized to maximum.";
+  }
+
+  //update input fields to reflect the corrected values
+  widthInput.value = inputWidth;
+  heightInput.value = inputHeight;
+
+  //show alert
+  if (originalWidth !== inputWidth || originalHeight !== inputHeight) {
+    console.warn("Canvas size must be between 1 and 500!");
+
+    var alertWin = document.getElementById("alertWin");
+    var alertForHide = document.getElementById("alertForHide");
+
+    alertWin.classList.add("showAlert");
+    alertForHide.style.display = "block";
+
+    alertText.innerHTML = "Canvas size must be between 1 and 500.";
+
+    //hide alert after 3 seconds
+    setTimeout(() => {
+      alertWin.classList.remove("showAlert");
+      alertForHide.style.display = "none";
+      secondTextWidth.innerHTML = ""; //reset alert second texts after alert ends
+      secondTextHeight.innerHTML = "";
+    }, 3000);
+  }
+
+  //set the grid dimensions
+  gridWidth = inputWidth;
+  gridHeight = inputHeight;
+
+  //clear previous paths
+  pathsry = [];
   redoStack = [];
-  generateBtn.innerHTML = "Regenerate Canvas"; //change button text
-  resizeCanvas();
+
+  generateBtn.innerHTML = "Regenerate Canvas";
+
+  resizeCanvas(); //call resize function
 });
 
 //draw the grid
 function drawGrid() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.strokeStyle = "#ddd";
+  ctx.strokeStyle = "#ddd"; //colour of grid lines
 
   for (let x = 0; x < gridWidth; x++) {
     for (let y = 0; y < gridHeight; y++) {
@@ -134,10 +192,11 @@ function updateColourHistory(newColour) {
 }
 
 //fill a pixel
-function fillPixel(x, y, colour) {
-  const r = parseInt(colour.slice(1, 3), 16);
-  const g = parseInt(colour.slice(3, 5), 16);
-  const b = parseInt(colour.slice(5, 7), 16);
+function fillPixel(x, y, colour) { //coords and colour
+  //convert hex to rgb for use with alpha
+  const r = parseInt(colour.slice(1, 3), 16); //extract first 2 hex chars and convert to decimal
+  const g = parseInt(colour.slice(3, 5), 16); //extract next 2 hex chars and convert to decimal
+  const b = parseInt(colour.slice(5, 7), 16); //extract last 2 hex chars and convert to decimal
 
   //set RGBA colour using current alphaValue
   ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alphaValue})`;
@@ -425,16 +484,27 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
+//help
+document.addEventListener("keydown", (e) => {
+  if (e.key === "h"|| e.key === "H") {
+    toggleHelp();
+  }
+});
+
 //hide show help menu
 function toggleHelp() {
   console.log("help toggled");
 
   var helpDisp = document.getElementById("helpWin");
+  var blockDisp = document.getElementById("forHide");
 
-  if (helpDisp.style.display === "none") {
-    helpDisp.style.display = "block";
+  helpDisp.classList.toggle('show');
+
+  if (blockDisp.style.display === "none") {
+    blockDisp.style.display = "block";
+
   } else {
-    helpDisp.style.display = "none";
+    blockDisp.style.display = "none";
   }
 }
 
@@ -549,12 +619,27 @@ let panY = 0;
 let isPanning = false;
 let startX, startY;
 
+
 //apply transformations
 function redrawTransformed() {
   ctx.setTransform(scale, 0, 0, scale, panX, panY); //apply zoom & pan
   ctx.clearRect(-panX / scale, -panY / scale, canvas.width / scale, canvas.height / scale);
+
+  //keep grid width thin
+  ctx.lineWidth = Math.max(0.5, 1 / scale);
+
+
   redrawCanvas(); //redraw grid and drawings
 }
+
+//reset all zoom/pan variables and redrae the canvas
+resetView.addEventListener("click", () => {
+  panX = 0;
+  panY = 0;
+  scale = 1;
+  redrawTransformed();
+  console.log("reset button clicked");
+});
 
 //zoom functionality with mouse wheel
 canvas.addEventListener("wheel", (e) => {

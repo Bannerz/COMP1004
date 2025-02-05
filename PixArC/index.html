@@ -14,22 +14,22 @@
   <body onload="">
     <div class="mainHeader">
       <h1 class="mainTitle">Pix/Ar/C</h1>
-      <button class="helpBtn" titlel="Click me for a tutorial or help" onclick="toggleHelp()">
-
-      </button>
+      <button class="helpBtn" title="Click me for a tutorial or help" onclick="toggleHelp()">?</button>
     </div>
     <div class="content">
       <div class="toolBar">
+          <br>
         <h1 class="panelTitle">Tool Bar</h1>
           <br>
+          <hr>
           <br>
         <label for="widthInput">Width (px):</label>
           <br>
-        <input type="number" id="widthInput" min="1" value="16">
+        <input type="number" id="widthInput" min="1" max="500" value="16">
           <br>
         <label for="heightInput">Height (px):</label>
           <br>
-        <input type="number" id="heightInput" min="1" value="16">
+        <input type="number" id="heightInput" min="1" max="500" value="16">
           <br>
           <br>
         <button id="generateBtn">Generate Canvas</button>
@@ -38,9 +38,10 @@
         <button id="paintBtn">Paint</button>
         <button id="eraseBtn">Eraser</button>
           <br>
+          <br>
         <label for="brushSize">Brush Size: </label>
           <br>
-        <input type="range" id="brushSize" min="1" max="20" value="1" />
+        <input type="range" id="brushSize" min="1" max="20" value="1" class="slider" />
         <span id="brushSizeValue">1</span>
           <br>
           <br>
@@ -48,11 +49,14 @@
           <br>
           <br>
         <p id="currentTool">Current tool: paint</p>
+          <br>
+        <button id="resetView">Reset View</button>
       </div>
       <div class="drawCanv">
         <h1 class="panelTitle">Drawing Canvas</h1>
           <br>
         <canvas id="pixelCanvas"></canvas>
+          <br>
           <br>
         <button id="undo">Undo</button>
         <button id="redo">Redo</button>
@@ -66,25 +70,53 @@
         <script src="pixarc.js" type="text/javascript" defer></script>
       </div>
       <div class="colourPal">
+          <br>
         <h1 class="panelTitle"> Colour Palette</h1>
           <br>
+          <hr>
           <br>
         <label for="colourPicker">Colour:</label>
         <input type="color" id="colourPicker" value="#000000">
           <br>
         <label for="alphaSlider">Alpha:</label>
-        <input type="range" id="alphaSlider" min="0" max="1" step="0.01" value="1">
+        <input type="range" id="alphaSlider" min="0" max="1" step="0.01" value="1" class="slider">
           <br>
         <span id="rgbaDisplay"></span>
           <br>
         <div id="colourHistory" style="display: flex; margin-top: 10px;"></div>
       </div>
     </div>
-    <div class="helpWindow" id="helpWin" style="display: none;">
-      <button class="closeButton" id="closeBtn" onclick="toggleHelp()">X</button>
-      <p>Hello, this is where help will go.</p>
+    <div class="helpWindow" id="helpWin">
+      <div id="forHide" style="display: none;">
+        <div class="helpTop">
+          <h2 class="helpTitle">Pix/Ar/C Help Section</h2>
+          <button class="closeButton" id="closeBtn" onclick="toggleHelp()">X</button>
+        </div>
+        <div class="help-inner">
+          <h3>Keyboard shortcuts</h3>
+            <br>
+          <ul>
+            <li>C - Clear the canvas</li>
+            <li>Left/Right Arrow Keys - Undo/Redo</li>
+            <li>Scroll Wheel - Zoom in & out</li>
+            <li>Shift + Click & Drag - Pan canvas</li>
+            <li>H - Toggle this help window</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="alertAnim" id="alertWin">
+      <div id="alertForHide" style="display: none;">
+        <div class="alertBar">
+          <h3>Alert!</h3>
+        </div>
+        <h3 class="alert" id="alertText"></h3>
+        <h4 class="alert" id="secondTextWidth"></h4>
+        <h4 class="alert" id="secondTextHeight"></h4>
+      </div>
     </div>
     <div class="mainFooter">
+      <p>Copyright &copy 2025 Alex Banfield | Pix/Ar/C</p>
     </div>
   </body>
 </html>
