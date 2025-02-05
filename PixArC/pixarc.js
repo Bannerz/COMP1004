@@ -217,8 +217,6 @@ function getTransformedMousePos(e) {
   return { x: Math.floor(mouseX / cellSize), y: Math.floor(mouseY / cellSize) };
 }
 
-
-
 //draw pixel from mouse event
 function drawPixelFromEvent(e, colour) {
   //get the mouse position relative to the canvas after transformations
@@ -441,39 +439,53 @@ alphaSlider.addEventListener("input", (e) => {
 
 //download logic
 downloadBtn.addEventListener("click", () => {
-  //create an offscreen canvas at the user selected grid resolution
+  //create an offscreen canvas with grid size in pixels
   const offscreenCanvas = document.createElement("canvas");
   offscreenCanvas.width = gridWidth;
   offscreenCanvas.height = gridHeight;
   const offscreenCtx = offscreenCanvas.getContext("2d");
 
-  //scale the current canvas content down to the grid resolution
-  offscreenCtx.drawImage(canvas, 0, 0, gridWidth, gridHeight);
+  offscreenCtx.clearRect(0, 0, offscreenCanvas.width, offscreenCanvas.height);
 
-  //convert the offscreen canvas content to a PNG
+  //scale down cell size to fit the user defined pixel grid
+  const scaleFactor = 1 / cellSize; //ensure scaling
+  offscreenCtx.scale(scaleFactor, scaleFactor);
+
+  //redraw all saved paths from pathsry
+  pathsry.forEach((path) => {
+    if (path.type === "paint") {
+      offscreenCtx.globalAlpha = path.alpha;
+      offscreenCtx.fillStyle = path.colour;
+      path.points.forEach((point) => {
+        offscreenCtx.fillRect(point.x * cellSize, point.y * cellSize, cellSize, cellSize);
+      });
+      offscreenCtx.globalAlpha = 1;
+    }
+  });
+
+  //convert offscreen canvas to a PNG
   const imageData = offscreenCanvas.toDataURL("image/png");
 
   //create a download link
   const downloadLink = document.createElement("a");
   downloadLink.href = imageData;
-  downloadLink.download = `PixArC_${gridWidth}x${gridHeight}_${Math.floor((Math.random() * 100000) + 1)}.png`; //add random number to file name
+  downloadLink.download = `PixArC_${gridWidth}x${gridHeight}_${Math.floor((Math.random() * 100000) + 1)}.png`;
   downloadLink.click();
+
   console.log("File downloaded");
+
   //show alert
   var alertWin = document.getElementById("alertWin");
   var alertForHide = document.getElementById("alertForHide");
 
   alertWin.classList.add("showAlert");
   alertForHide.style.display = "block";
-
   alertText.innerHTML = "Image downloaded!";
 
   //hide alert after 3 seconds
   setTimeout(() => {
     alertWin.classList.remove("showAlert");
     alertForHide.style.display = "none";
-    secondTextWidth.innerHTML = ""; //reset alert second texts after alert ends
-    secondTextHeight.innerHTML = "";
     alertText.innerHTML = "";
   }, 3000);
 });
@@ -636,7 +648,6 @@ let panY = 0;
 let isPanning = false;
 let startX, startY;
 
-
 //apply transformations
 function redrawTransformed() {
   ctx.setTransform(scale, 0, 0, scale, panX, panY); //apply zoom & pan
@@ -710,8 +721,6 @@ canvas.addEventListener("mouseleave", () => {
   isPanning = false;
   canvas.style.cursor = "default";
 });
-
-
 
 /*
 credits and sources:
