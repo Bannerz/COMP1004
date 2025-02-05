@@ -155,6 +155,7 @@ generateBtn.addEventListener("click", () => {
       alertForHide.style.display = "none";
       secondTextWidth.innerHTML = ""; //reset alert second texts after alert ends
       secondTextHeight.innerHTML = "";
+      alertText.innerHTML = "";
     }, 3000);
   }
 
@@ -458,7 +459,23 @@ downloadBtn.addEventListener("click", () => {
   downloadLink.download = `PixArC_${gridWidth}x${gridHeight}_${Math.floor((Math.random() * 100000) + 1)}.png`; //add random number to file name
   downloadLink.click();
   console.log("File downloaded");
-  alert("File downloaded!");
+  //show alert
+  var alertWin = document.getElementById("alertWin");
+  var alertForHide = document.getElementById("alertForHide");
+
+  alertWin.classList.add("showAlert");
+  alertForHide.style.display = "block";
+
+  alertText.innerHTML = "Image downloaded!";
+
+  //hide alert after 3 seconds
+  setTimeout(() => {
+    alertWin.classList.remove("showAlert");
+    alertForHide.style.display = "none";
+    secondTextWidth.innerHTML = ""; //reset alert second texts after alert ends
+    secondTextHeight.innerHTML = "";
+    alertText.innerHTML = "";
+  }, 3000);
 });
 
 //keyboard shortcuts
