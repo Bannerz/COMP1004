@@ -39,16 +39,30 @@
         <button id="eraseBtn">Eraser</button>
           <br>
           <br>
+        <p id="currentTool">Current tool: paint</p>
+          <br>
         <label for="brushSize">Brush Size: </label>
           <br>
         <input type="range" id="brushSize" min="1" max="20" value="1" class="slider" />
         <span id="brushSizeValue">1</span>
           <br>
           <br>
-        <button id="gridToggleBtn">Toggle Grid</button>
+        <div class="toggleContainer">
+          <label class="switch">
+            <input type="checkbox" id="gridToggleSwitch" checked>
+            <span class="sliderTog"></span>
+          </label>
+          <span>Show Grid</span>
+            <br>
+            <br>
+          <label class="switch">
+            <input type="checkbox" id="coordsToggleSwitch" checked>
+            <span class="sliderTog"></span>
+          </label>
+          <span>Show Coords</span>
+
+        </div>
           <br>
-          <br>
-        <p id="currentTool">Current tool: paint</p>
           <br>
         <button id="resetView">Reset View</button>
       </div>
@@ -78,10 +92,20 @@
         <label for="colourPicker">Colour:</label>
         <input type="color" id="colourPicker" value="#000000">
           <br>
+          <br>
         <label for="alphaSlider">Alpha:</label>
         <input type="range" id="alphaSlider" min="0" max="1" step="0.01" value="1" class="slider">
           <br>
-        <span id="rgbaDisplay"></span>
+        <span id="rgbaDisplay">rgba(0, 0, 0, 1)</span>
+          <br>
+          <br>
+        <div class="toggleContainer">
+          <label class="switch">
+            <input type="checkbox" id="colToggleSwitch" checked>
+            <span class="sliderTog"></span>
+          </label>
+          <span>Show Colour</span>
+        </div>
           <br>
         <div id="colourHistory" style="display: flex; margin-top: 10px;"></div>
       </div>
@@ -93,15 +117,20 @@
           <button class="closeButton" id="closeBtn" onclick="toggleHelp()">X</button>
         </div>
         <div class="help-inner">
-          <h3>Keyboard shortcuts</h3>
-            <br>
-          <ul>
-            <li>C - Clear the canvas</li>
-            <li>Left/Right Arrow Keys - Undo/Redo</li>
-            <li>Scroll Wheel - Zoom in & out</li>
-            <li>Shift + Click & Drag - Pan canvas</li>
-            <li>H - Toggle this help window</li>
-          </ul>
+          <div class="help-left">
+            <h3>Keyboard shortcuts</h3>
+              <br>
+            <ul>
+              <li>C - Clear the canvas</li>
+              <li>Left/Right Arrow Keys - Undo/Redo</li>
+              <li>Scroll Wheel - Zoom in & out</li>
+              <li>Shift + Click & Drag - Pan canvas</li>
+              <li>H - Toggle this help window</li>
+            </ul>
+        </div class="help-right">
+        <div>
+          <h3>Tips and tricks</h3>
+        </div>
         </div>
       </div>
     </div>
@@ -118,5 +147,8 @@
     <div class="mainFooter">
       <p>Copyright &copy 2025 Alex Banfield | Pix/Ar/C</p>
     </div>
+
+    <div id="move" style="display: block;"></div>
+    <div id="colourMove" style="display: block;"></div>
   </body>
 </html>

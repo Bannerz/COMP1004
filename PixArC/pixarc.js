@@ -20,6 +20,11 @@ const resetView = document.getElementById("resetView");
 const alertText = document.getElementById("alertText");
 const secondTextWidth = document.getElementById("secondTextWidth");
 const secondTextHeight = document.getElementById("secondTextHeight");
+const gridToggleSwitch = document.getElementById("gridToggleSwitch");
+const coordsToggleSwitch = document.getElementById("coordsToggleSwitch");
+const colourMove = document.getElementById("colourMove");
+const colToggleSwitch = document.getElementById("colToggleSwitch");
+
 const ctx = canvas.getContext("2d");
 
 //colour picker with alpha set up
@@ -75,13 +80,11 @@ function redrawCanvas() {
   redrawPaths(); //redraw all saved paths
 }
 
-//function to toggle grid visibility
-function toggleGrid() {
-  showGrid = !showGrid; //toggle the grid visibility flag
-  redrawCanvas(); //update the canvas immediately
-}
-
-gridToggleBtn.addEventListener("click", toggleGrid);
+//toggle grid with cool slider
+gridToggleSwitch.addEventListener("change", () => {
+  showGrid = gridToggleSwitch.checked; //toggle grid visibility
+  redrawCanvas(); //update canvas
+});
 
 //update brush size when slider is adjusted
 brushSizeSlider.addEventListener("input", (e) => {
@@ -261,6 +264,13 @@ canvas.addEventListener("mousedown", (e) => {
   mouse = oMousePos(canvas, e);
   points.push({ x: mouse.x, y: mouse.y });
   drawPixelFromEvent(e, colourPicker.value);
+
+  if (e.shiftKey) {
+    isPanning = true;
+    startX = e.clientX - panX;
+    startY = e.clientY - panY;
+    canvas.style.cursor = "grab"; //cursor to indicate panning
+  }
 });
 
 canvas.addEventListener("mousemove", (e) => {
@@ -269,16 +279,36 @@ canvas.addEventListener("mousemove", (e) => {
     points.push({ x: mouse.x, y: mouse.y });
     drawPixelFromEvent(e, colourPicker.value);
   }
+
+  //use in mousemove event for live updates
+  //use getTransformedMousePos for grid coords
+  const { x, y } = getTransformedMousePos(e);
+
+  //make sure the coords stay within the grid and convert to grid coords for zoom and pan
+  const gridX = Math.max(0, Math.min(gridWidth - 1, Math.floor(x)));
+  const gridY = Math.max(0, Math.min(gridHeight - 1, Math.floor(y)));
+
+  //display the coords in the following div
+  move.innerText = `X: ${gridX}, Y: ${gridY}`;
+
+  colourMove.style.backgroundColor = currentColour;
+
+
+  if (isPanning) {
+    panX = e.clientX - startX;
+    panY = e.clientY - startY;
+    redrawTransformed();
+  }
 });
 
 //mouseup event listener
 canvas.addEventListener("mouseup", () => {
   if (isDrawing) {
     if (isErasing) {
-      // Save eraser actions
+      //save eraser actions
       pathsry.push({ points: points, type: "erase" });
     } else if (isPainting) {
-      // Save paint actions with alpha
+      //save paint actions with alpha
       const currentColour = colourPicker.value;
       addColourToHistory(currentColour);
 
@@ -293,11 +323,17 @@ canvas.addEventListener("mouseup", () => {
     redoStack = []; //clear redo stack on new draw
     isDrawing = false;
   }
+
+  isPanning = false;
+  canvas.style.cursor = "default";
 });
 
 //stop drawing when mouse leaves the canvas
 canvas.addEventListener("mouseleave", () => {
   isDrawing = false;
+  move.innerText = "X: -, Y: -"; //set the coords display to nothing when not in the canvas
+  isPanning = false;
+  canvas.style.cursor = "default";
 });
 
 //function to add a colour to the colour history
@@ -584,6 +620,21 @@ saveBtn.addEventListener("click", () => {
 
   URL.revokeObjectURL(url); //release memory and resources once done using it
   console.log("Canvas state saved:", state); //print to console
+
+  //show alert
+  var alertWin = document.getElementById("alertWin");
+  var alertForHide = document.getElementById("alertForHide");
+
+  alertWin.classList.add("showAlert");
+  alertForHide.style.display = "block";
+  alertText.innerHTML = "Canvas State saved & downloaded!";
+
+  //hide alert after 3 seconds
+  setTimeout(() => {
+    alertWin.classList.remove("showAlert");
+    alertForHide.style.display = "none";
+    alertText.innerHTML = "";
+  }, 3000);
 });
 
 //load the canvas state
@@ -628,9 +679,37 @@ loadBtn.addEventListener("click", () => {
           redrawPaths();
 
           console.log("Canvas state loaded:", state);
+
+          //show alert
+          var alertWin = document.getElementById("alertWin");
+          var alertForHide = document.getElementById("alertForHide");
+
+          alertWin.classList.add("showAlert");
+          alertForHide.style.display = "block";
+          alertText.innerHTML = "Canvas State loaded!";
+
+          //hide alert after 3 seconds
+          setTimeout(() => {
+            alertWin.classList.remove("showAlert");
+            alertForHide.style.display = "none";
+            alertText.innerHTML = "";
+          }, 3000);
         } catch (err) {
           console.error("Failed to load canvas state:", err);
-          alert("Failed to load canvas state. Ensure the file is valid.");
+          //show alert
+          var alertWin = document.getElementById("alertWin");
+          var alertForHide = document.getElementById("alertForHide");
+
+          alertWin.classList.add("showAlert");
+          alertForHide.style.display = "block";
+          alertText.innerHTML = "Failed to load canvas. Ensure file is valid!";
+
+          //hide alert after 3 seconds
+          setTimeout(() => {
+            alertWin.classList.remove("showAlert");
+            alertForHide.style.display = "none";
+            alertText.innerHTML = "";
+          }, 3000);
         }
       };
       reader.readAsText(file);
@@ -691,37 +770,50 @@ canvas.addEventListener("wheel", (e) => {
   redrawTransformed();
 });
 
-//shift key for panning activation
-canvas.addEventListener("mousedown", (e) => {
-  if (e.shiftKey) {
-    isPanning = true;
-    startX = e.clientX - panX;
-    startY = e.clientY - panY;
-    canvas.style.cursor = "grab"; //cursor to indicate panning
+//move div on mouse move to follow mouse
+document.body.onpointermove = event => {
+    const { clientX, clientY } = event; //mouse coords relative to position on page
+
+    move.animate({ //animate based on these coords
+        left: `${clientX + 20}px`, //x adjusted by 20px
+        top: `${clientY + 20}px` //y adjusted by 20px
+
+    }, {duration: 10, fill: "forwards"}) //time it takes for the box to catch up with mouse
+
+    colourMove.animate({ //animate based on these coords
+        left: `${clientX + 35}px`, //x adjusted by 20px
+        top: `${clientY + 60}px` //y adjusted by 20px
+
+    }, {duration: 10, fill: "forwards"}) //time it takes for the box to catch up with mouse
+
+}
+
+//toggle coords with cool slider
+coordsToggleSwitch.addEventListener("change", () => {
+  console.log("coods togged");
+
+  //show / hide coords
+  if (move.style.display === "none") {
+    move.style.display = "block";
+
+  } else {
+    move.style.display = "none";
   }
 });
 
-//pan with the mouse
-canvas.addEventListener("mousemove", (e) => {
-  if (isPanning) {
-    panX = e.clientX - startX;
-    panY = e.clientY - startY;
-    redrawTransformed();
+//toggle colour with cool slider
+colToggleSwitch.addEventListener("change", () => {
+  console.log("colour togged");
+
+  //show / hide coords
+
+  if (colourMove.style.display === "none") {
+    colourMove.style.display = "block";
+
+  } else {
+    colourMove.style.display = "none";
   }
 });
-
-//stop panning
-canvas.addEventListener("mouseup", () => {
-  isPanning = false;
-  canvas.style.cursor = "default";
-});
-
-//stop panning if mouse leaves canvas
-canvas.addEventListener("mouseleave", () => {
-  isPanning = false;
-  canvas.style.cursor = "default";
-});
-
 /*
 credits and sources:
 https://stackoverflow.com/questions/53960651/how-to-make-an-undo-function-in-canvas
@@ -739,4 +831,10 @@ https://stackoverflow.com/questions/3665115/how-to-create-a-file-in-memory-for-u
 https://harrisonmilbradt.com/articles/canvas-panning-and-zooming
 https://stackoverflow.com/questions/38142308/canvas-drag-on-mouse-movement
 https://plnkr.co/edit/j8QCxwDzXJZN2DKszKwm?preview
+https://stackoverflow.com/questions/77628677/how-do-i-make-an-element-follow-the-mouse
+https://www.w3schools.com/graphics/canvas_coordinates.asp
+https://www.reddit.com/r/learnjavascript/comments/uyt2st/how_to_get_exact_coordinates_of_a_pixel_from_a/
+https://stackoverflow.com/questions/71669214/get-x-y-position-in-canvas
+https://www.w3schools.com/howto/howto_css_switch.asp
+https://bito.ai/resources/javascript-checkbox-onchange-javascript-explained/#:~:text=The%20element%20with%20type,run%20code%20when%20this%20happens.
 */
