@@ -1,4 +1,14 @@
-//dom elements for setting up
+/*
+
+PixArC - A Pixel art creator by Alex Banfield
+
+COMP1004 Single Page Application Project 2025
+
+Student Number 10525953
+
+*/
+
+/* declare DOM elements */
 const widthInput = document.getElementById("widthInput");
 const heightInput = document.getElementById("heightInput");
 const colourPicker = document.getElementById("colourPicker");
@@ -24,9 +34,19 @@ const gridToggleSwitch = document.getElementById("gridToggleSwitch");
 const coordsToggleSwitch = document.getElementById("coordsToggleSwitch");
 const colourMove = document.getElementById("colourMove");
 const colToggleSwitch = document.getElementById("colToggleSwitch");
+const confirmWin = document.getElementById("confirmWin");
+const confirmForHide = document.getElementById("confirmForHide");
+const confirmYes = document.getElementById("confirmYes");
+const confirmNo = document.getElementById("confirmNo");
+const darkModeToggle = document.getElementById("darkModeToggle");
+const fontSizeSlider = document.getElementById("fontSizeSlider");
+const fontSizeValue = document.getElementById("fontSizeValue");
 
 const ctx = canvas.getContext("2d");
 
+/* end declaring DOM elements */
+
+/* declare variables */
 //colour picker with alpha set up
 let currentColour = "#000000"; //default colour
 let alphaValue = 1; //default alpha
@@ -55,6 +75,19 @@ let gridWidth, gridHeight, cellSize;
 let isDrawing = false;
 let showGrid = true; //flag to control grid visibility
 
+let confirmUnload = true; // Control whether to warn the user
+
+//variabels for zoom and pan feature
+let scale = 1; //default scale
+let panX = 0; //offset panned on x
+let panY = 0; //offset panned on y
+let isPanning = false; //is panning flag
+let shiftPressed = false; //is shift pressed flag
+let startX, startY; //start positions
+
+/* end declaring variables */
+
+/* listerners */
 //tool functions listeners
 paintBtn.addEventListener("click", () => {
   isPainting = true;
@@ -71,19 +104,32 @@ eraseBtn.addEventListener("click", () => {
 
 });
 
-//redraw the canvas (grid and paths)
-function redrawCanvas() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height); //clear the canvas
-  if (showGrid) {
-    drawGrid(); //draw the grid if the flag is true
-  }
-  redrawPaths(); //redraw all saved paths
-}
-
 //toggle grid with cool slider
 gridToggleSwitch.addEventListener("change", () => {
   showGrid = gridToggleSwitch.checked; //toggle grid visibility
   redrawCanvas(); //update canvas
+});
+
+//toggle coords with cool slider
+coordsToggleSwitch.addEventListener("change", () => {
+  console.log("coods togged");
+  //show / hide coords
+  if (move.style.display === "none") {
+    move.style.display = "block";
+  } else {
+    move.style.display = "none";
+  }
+});
+
+//toggle colour with cool slider
+colToggleSwitch.addEventListener("change", () => {
+  console.log("colour togged");
+  //show / hide colour
+  if (colourMove.style.display === "none") {
+    colourMove.style.display = "block";
+  } else {
+    colourMove.style.display = "none";
+  }
 });
 
 //update brush size when slider is adjusted
@@ -92,33 +138,25 @@ brushSizeSlider.addEventListener("input", (e) => {
   brushSizeValue.textContent = brushSize;
 });
 
-//resize canvas
-function resizeCanvas() {
-  const container = document.querySelector(".drawCanv");
-  const maxCanvasWidth = container.clientWidth * 0.9;
-  const maxCanvasHeight = window.innerHeight * 0.7;
-
-  cellSize = Math.min(
-    Math.floor(maxCanvasWidth / gridWidth),
-    Math.floor(maxCanvasHeight / gridHeight)
-  );
-
-  canvas.width = gridWidth * cellSize;
-  canvas.height = gridHeight * cellSize;
-
-  drawGrid();
-  redrawPaths(); //redraw paths after resizing
-}
-
 //generate a new canvas grid
 generateBtn.addEventListener("click", () => {
+  //show confirmation window
+  confirmWin.style.display = "block";
+  confirmForHide.style.display = "block";
+});
+
+//if yes
+confirmYes.addEventListener("click", () => {
+  confirmWin.style.display = "none";
+  confirmForHide.style.display = "none";
+
   let originalWidth = parseInt(widthInput.value);
   let originalHeight = parseInt(heightInput.value);
 
   let inputWidth = originalWidth;
   let inputHeight = originalHeight;
 
-  //ensure values are within the allowed range
+  //ensure values are within range
   if (inputWidth < 1) {
     inputWidth = 1;
     secondTextWidth.innerHTML = "Canvas width resized to minimum.";
@@ -136,11 +174,11 @@ generateBtn.addEventListener("click", () => {
     secondTextHeight.innerHTML = "Canvas height resized to maximum.";
   }
 
-  //update input fields to reflect the corrected values
+  //update input fields
   widthInput.value = inputWidth;
   heightInput.value = inputHeight;
 
-  //show alert
+  //show alert if values were adjusted
   if (originalWidth !== inputWidth || originalHeight !== inputHeight) {
     console.warn("Canvas size must be between 1 and 500!");
 
@@ -156,13 +194,13 @@ generateBtn.addEventListener("click", () => {
     setTimeout(() => {
       alertWin.classList.remove("showAlert");
       alertForHide.style.display = "none";
-      secondTextWidth.innerHTML = ""; //reset alert second texts after alert ends
+      secondTextWidth.innerHTML = "";
       secondTextHeight.innerHTML = "";
       alertText.innerHTML = "";
     }, 3000);
   }
 
-  //set the grid dimensions
+  //set grid dimensions
   gridWidth = inputWidth;
   gridHeight = inputHeight;
 
@@ -172,109 +210,38 @@ generateBtn.addEventListener("click", () => {
 
   generateBtn.innerHTML = "Regenerate Canvas";
 
-  resizeCanvas(); //call resize function
+  resizeCanvas(); //resize the canvas
 });
 
-//draw the grid
-function drawGrid() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.strokeStyle = "#ddd"; //colour of grid lines
-
-  for (let x = 0; x < gridWidth; x++) {
-    for (let y = 0; y < gridHeight; y++) {
-      ctx.strokeRect(x * cellSize, y * cellSize, cellSize, cellSize);
-    }
-  }
-}
-
-//update the colour history
-function updateColourHistory(newColour) {
-  if (!colourArry.includes(newColour)) {
-    colourArry.push(newColour);
-    addColourToHistory(newColour);
-  }
-}
-
-//fill a pixel
-function fillPixel(x, y, colour) { //coords and colour
-  //convert hex to rgb for use with alpha
-  const r = parseInt(colour.slice(1, 3), 16); //extract first 2 hex chars and convert to decimal
-  const g = parseInt(colour.slice(3, 5), 16); //extract next 2 hex chars and convert to decimal
-  const b = parseInt(colour.slice(5, 7), 16); //extract last 2 hex chars and convert to decimal
-
-  //set RGBA colour using current alphaValue
-  ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alphaValue})`;
-  ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
-}
-
-function getTransformedMousePos(e) {
-  //position and dimensions relative to the viewport
-  const rect = canvas.getBoundingClientRect();
-
-  //calc the mouse position in canvas coords considering the pan and scale
-  const mouseX = (e.clientX - rect.left - panX) / scale;
-  const mouseY = (e.clientY - rect.top - panY) / scale;
-
-  //return the transformed mouse position, rounding to the nearest grid cell
-  // divinding by cell size allows us to get grid-based coordinates
-  return { x: Math.floor(mouseX / cellSize), y: Math.floor(mouseY / cellSize) };
-}
-
-//draw pixel from mouse event
-function drawPixelFromEvent(e, colour) {
-  //get the mouse position relative to the canvas after transformations
-  const { x, y } = getTransformedMousePos(e);
-
-  //check if the mouse position is within the grid boundaries
-  if (x >= 0 && x < gridWidth && y >= 0 && y < gridHeight) {
-    const radius = Math.floor(brushSize / 2); //define the brush radius based on brush size
-
-    //loop through the brush area around the mouse position
-    for (let dx = -radius; dx <= radius; dx++) {
-      for (let dy = -radius; dy <= radius; dy++) {
-        const px = x + dx; //calculate pixel position in x
-        const py = y + dy; //calculate pixel position in y
-
-        //ensure pixel is within grid boundaries
-        if (px >= 0 && px < gridWidth && py >= 0 && py < gridHeight) {
-          //check if the pixel falls within the circular brush area
-          if (dx * dx + dy * dy <= radius * radius) {
-            //if erasing, clear the pixel and update the points array
-            if (isErasing) {
-              ctx.clearRect(px * cellSize, py * cellSize, cellSize, cellSize);
-              //optionally draw the grid lines if enabled
-              if (showGrid) ctx.strokeRect(px * cellSize, py * cellSize, cellSize, cellSize);
-              points.push({ x: px, y: py, type: "erase" });
-            } else {
-              //if painting, fill the pixel with the selected color and update points array
-              fillPixel(px, py, colour);
-              points.push({ x: px, y: py, type: "paint", colour });
-            }
-          }
-        }
-      }
-    }
-  }
-}
+//if no
+confirmNo.addEventListener("click", () => {
+  confirmWin.style.display = "none";
+  confirmForHide.style.display = "none";
+});
 
 //mouse events
 canvas.addEventListener("mousedown", (e) => {
-  isDrawing = true;
-  points = [];
-  mouse = oMousePos(canvas, e);
-  points.push({ x: mouse.x, y: mouse.y });
-  drawPixelFromEvent(e, colourPicker.value);
-
-  if (e.shiftKey) {
+  if (shiftPressed) {
     isPanning = true;
     startX = e.clientX - panX;
     startY = e.clientY - panY;
     canvas.style.cursor = "grab"; //cursor to indicate panning
+  } else {
+    isDrawing = true;
+    points = [];
+    mouse = oMousePos(canvas, e);
+    points.push({ x: mouse.x, y: mouse.y });
+    drawPixelFromEvent(e, colourPicker.value);
   }
 });
 
 canvas.addEventListener("mousemove", (e) => {
-  if (isDrawing) {
+  if (isPanning) {
+    panX = e.clientX - startX;
+    panY = e.clientY - startY;
+    redrawTransformed();
+  }
+  else if (isDrawing) {
     mouse = oMousePos(canvas, e);
     points.push({ x: mouse.x, y: mouse.y });
     drawPixelFromEvent(e, colourPicker.value);
@@ -292,13 +259,6 @@ canvas.addEventListener("mousemove", (e) => {
   move.innerText = `X: ${gridX}, Y: ${gridY}`;
 
   colourMove.style.backgroundColor = currentColour;
-
-
-  if (isPanning) {
-    panX = e.clientX - startX;
-    panY = e.clientY - startY;
-    redrawTransformed();
-  }
 });
 
 //mouseup event listener
@@ -310,7 +270,7 @@ canvas.addEventListener("mouseup", () => {
     } else if (isPainting) {
       //save paint actions with alpha
       const currentColour = colourPicker.value;
-      addColourToHistory(currentColour);
+      addColourToHistory(currentColour); //add to colour array
 
       pathsry.push({
         points: points,
@@ -324,8 +284,8 @@ canvas.addEventListener("mouseup", () => {
     isDrawing = false;
   }
 
-  isPanning = false;
-  canvas.style.cursor = "default";
+  isPanning = false; //stop panning flag
+  canvas.style.cursor = "default"; //change cursor back to normal
 });
 
 //stop drawing when mouse leaves the canvas
@@ -335,27 +295,6 @@ canvas.addEventListener("mouseleave", () => {
   isPanning = false;
   canvas.style.cursor = "default";
 });
-
-//function to add a colour to the colour history
-function addColourToHistory(colour) {
-  if (!colourArry.includes(colour)) {
-    colourArry.push(colour);
-
-    //create a new colour history box
-    const colourBox = document.createElement("div");
-    colourBox.style.backgroundColor = colour;
-    colourBox.classList.add("colour-box");
-    colourBox.title = colour; //tooltip for the colour
-
-    //allow selecting the colour from history
-    colourBox.addEventListener("click", () => {
-      colourPicker.value = colour;
-    });
-
-    //append to the history container
-    colourHistoryContainer.appendChild(colourBox);
-  }
-}
 
 //check if brushSizeValue exists
 brushSizeSlider.addEventListener("input", (e) => {
@@ -367,77 +306,15 @@ brushSizeSlider.addEventListener("input", (e) => {
   }
 });
 
-//undo function
-function Undo() {
-  if (pathsry.length > 0) {
-    const lastPath = pathsry.pop();
-    redoStack.push(lastPath);
-    console.log(redoStack);
-    clearCanvas();
-    redrawPaths();
-  }
-}
-
-//redo function
-function Redo() {
-  if (redoStack.length > 0) {
-    const restoredPath = redoStack.pop();
-    pathsry.push(restoredPath);
-    clearCanvas();
-    redrawPaths();
-  }
-}
-
-//redraw all saved paths
-function redrawPaths() {
-  pathsry.forEach((path) => {
-    if (path.type === "erase") {
-      //handle eraser actions
-      path.points.forEach((point) => {
-        ctx.clearRect(point.x * cellSize, point.y * cellSize, cellSize, cellSize);
-
-        if (showGrid) {
-          //redraw the grid line for erased cell
-          ctx.strokeStyle = "#ddd";
-          ctx.strokeRect(point.x * cellSize, point.y * cellSize, cellSize, cellSize);
-        }
-      });
-    } else if (path.type === "paint") {
-      //handle painting actions
-      ctx.globalAlpha = path.alpha; //set alpha value
-      path.points.forEach((point) => {
-        fillPixel(point.x, point.y, path.colour);
-      });
-      ctx.globalAlpha = 1; //reset alpha after drawing
-    }
-  });
-}
-
-//mouse position detector
-function oMousePos(canvas, evt) {
-  const ClientRect = canvas.getBoundingClientRect();
-  return {
-    x: Math.round(evt.clientX - ClientRect.left),
-    y: Math.round(evt.clientY - ClientRect.top),
-  };
-}
-
-//clear the canvas and redraw grid
-function clearCanvas() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.globalAlpha = 1; //reset alpha to default
-if (showGrid) drawGrid();
-}
-
 //generate grid on load
 window.addEventListener("load", () => {
-  gridWidth = 16;
+  gridWidth = 16; //default on load dimensions
   gridHeight = 16;
 
-  widthInput.value = gridWidth;
+  widthInput.value = gridWidth; //display the dimensions in the input boxes
   heightInput.value = gridHeight;
 
-  resizeCanvas();
+  resizeCanvas(); //ensure the canvas is properly sized
 });
 
 //event listeners for undo/redo buttons
@@ -448,18 +325,6 @@ redoButton.addEventListener("click", Redo);
 window.addEventListener("resize", () => {
   if (gridWidth && gridHeight) resizeCanvas();
 });
-
-//update RGBA colour
-function updateRGBAColour() {
-  const r = parseInt(currentColour.slice(1, 3), 16);
-  const g = parseInt(currentColour.slice(3, 5), 16);
-  const b = parseInt(currentColour.slice(5, 7), 16);
-  const rgba = `rgba(${r}, ${g}, ${b}, ${alphaValue})`;
-
-  rgbaDisplay.textContent = rgba; //show RGBA value
-  console.log("Current RGBA Colour:", rgba);
-  colourPickerValue = rgba; //update global variable or use this for drawing
-}
 
 //listen for base colour changes
 colourPicker.addEventListener("input", (e) => {
@@ -473,7 +338,7 @@ alphaSlider.addEventListener("input", (e) => {
   updateRGBAColour();
 });
 
-//download logic
+//download png logic on button click
 downloadBtn.addEventListener("click", () => {
   //create an offscreen canvas with grid size in pixels
   const offscreenCanvas = document.createElement("canvas");
@@ -487,7 +352,7 @@ downloadBtn.addEventListener("click", () => {
   const scaleFactor = 1 / cellSize; //ensure scaling
   offscreenCtx.scale(scaleFactor, scaleFactor);
 
-  //redraw all saved paths from pathsry
+  //redraw all saved paths from pathsry and make sure erased paths are maintained
   pathsry.forEach((path) => {
     if (path.type === "paint") {
       offscreenCtx.globalAlpha = path.alpha;
@@ -495,7 +360,11 @@ downloadBtn.addEventListener("click", () => {
       path.points.forEach((point) => {
         offscreenCtx.fillRect(point.x * cellSize, point.y * cellSize, cellSize, cellSize);
       });
-      offscreenCtx.globalAlpha = 1;
+      offscreenCtx.globalAlpha = 1; //reset alpha
+    } else if (path.type === "erase") {
+      path.points.forEach((point) => {
+        offscreenCtx.clearRect(point.x * cellSize, point.y * cellSize, cellSize, cellSize);
+      });
     }
   });
 
@@ -526,7 +395,7 @@ downloadBtn.addEventListener("click", () => {
   }, 3000);
 });
 
-//keyboard shortcuts
+/*keyboard shortcut event listeners */
 //clear
 document.addEventListener("keydown", (e) => {
   if (e.key === "c" || e.key === "C") {
@@ -556,42 +425,51 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
-//hide show help menu
-function toggleHelp() {
-  console.log("help toggled");
-
-  var helpDisp = document.getElementById("helpWin");
-  var blockDisp = document.getElementById("forHide");
-
-  helpDisp.classList.toggle('show');
-
-  if (blockDisp.style.display === "none") {
-    blockDisp.style.display = "block";
-
-  } else {
-    blockDisp.style.display = "none";
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Shift") {
+    shiftPressed = true;
   }
-}
+});
 
-//function to restore colour history on load
-function restoreColourHistory() {
-  colourHistoryContainer.innerHTML = ""; //clear existing history
-  colourArry.forEach((colour) => {
-    const colourBox = document.createElement("div");
-    colourBox.style.backgroundColor = colour;
-    colourBox.classList.add("colour-box");
-    colourBox.title = colour;
+document.addEventListener("keyup", (event) => {
+  if (event.key === "Shift") {
+    shiftPressed = false;
+  }
+});
+/* end shortcut event listeners */
 
-    //allow selecting the colour from history
-    colourBox.addEventListener("click", () => {
-      colourPicker.value = colour;
-      currentColour = colour;
-    });
+//reset all zoom/pan variables and redrae the canvas
+resetView.addEventListener("click", () => {
+  panX = 0;
+  panY = 0;
+  scale = 1;
+  redrawTransformed();
+  console.log("reset button clicked");
+});
 
-    //append to the history container
-    colourHistoryContainer.appendChild(colourBox);
-  });
-}
+//zoom functionality with mouse wheel
+canvas.addEventListener("wheel", (e) => {
+  if (!shiftPressed) return; //prevent zoom if shift not pressed
+
+  e.preventDefault();
+  const zoomFactor = 1.1;
+  const mouseX = e.offsetX;
+  const mouseY = e.offsetY;
+  const zoomIn = e.deltaY < 0;
+
+  //new scale
+  const newScale = zoomIn ? scale * zoomFactor : scale / zoomFactor;
+
+  //stop over zooming
+  if (newScale < 0.5 || newScale > 5) return;
+
+  //keep zoom centered around mouse
+  panX = mouseX - ((mouseX - panX) * newScale) / scale;
+  panY = mouseY - ((mouseY - panY) * newScale) / scale;
+  scale = newScale;
+
+  redrawTransformed();
+});
 
 //save the canvas state
 saveBtn.addEventListener("click", () => {
@@ -716,58 +594,7 @@ loadBtn.addEventListener("click", () => {
     }
   });
 
-  input.click();
-});
-
-//zoom and pan
-//variabels for zoom and pan feature
-let scale = 1;
-let panX = 0;
-let panY = 0;
-let isPanning = false;
-let startX, startY;
-
-//apply transformations
-function redrawTransformed() {
-  ctx.setTransform(scale, 0, 0, scale, panX, panY); //apply zoom & pan
-  ctx.clearRect(-panX / scale, -panY / scale, canvas.width / scale, canvas.height / scale);
-
-  //keep grid width thin
-  ctx.lineWidth = Math.max(0.5, 1 / scale);
-
-
-  redrawCanvas(); //redraw grid and drawings
-}
-
-//reset all zoom/pan variables and redrae the canvas
-resetView.addEventListener("click", () => {
-  panX = 0;
-  panY = 0;
-  scale = 1;
-  redrawTransformed();
-  console.log("reset button clicked");
-});
-
-//zoom functionality with mouse wheel
-canvas.addEventListener("wheel", (e) => {
-  e.preventDefault();
-  const zoomFactor = 1.1;
-  const mouseX = e.offsetX;
-  const mouseY = e.offsetY;
-  const zoomIn = e.deltaY < 0;
-
-  //new scale
-  const newScale = zoomIn ? scale * zoomFactor : scale / zoomFactor;
-
-  //stop over zooming
-  if (newScale < 0.5 || newScale > 5) return;
-
-  //keep zoom centered around mouse
-  panX = mouseX - ((mouseX - panX) * newScale) / scale;
-  panY = mouseY - ((mouseY - panY) * newScale) / scale;
-  scale = newScale;
-
-  redrawTransformed();
+  input.click(); //click virtual link
 });
 
 //move div on mouse move to follow mouse
@@ -788,53 +615,330 @@ document.body.onpointermove = event => {
 
 }
 
-//toggle coords with cool slider
-coordsToggleSwitch.addEventListener("change", () => {
-  console.log("coods togged");
+/* end of listeners */
 
-  //show / hide coords
-  if (move.style.display === "none") {
-    move.style.display = "block";
+/* start of functions */
+
+//update RGBA colour
+function updateRGBAColour() {
+  const r = parseInt(currentColour.slice(1, 3), 16);
+  const g = parseInt(currentColour.slice(3, 5), 16);
+  const b = parseInt(currentColour.slice(5, 7), 16);
+  const rgba = `rgba(${r}, ${g}, ${b}, ${alphaValue})`;
+
+  rgbaDisplay.textContent = rgba; //show RGBA value
+  console.log("Current RGBA Colour:", rgba);
+  colourPickerValue = rgba; //update global variable or use this for drawing
+}
+
+//redraw the canvas (grid and paths)
+function redrawCanvas() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height); //clear the canvas
+  if (showGrid) {
+    drawGrid(); //draw the grid if the flag is true
+  }
+  redrawPaths(); //redraw all saved paths
+}
+
+//resize canvas
+function resizeCanvas() {
+  const container = document.querySelector(".drawCanv");
+  const maxCanvasWidth = container.clientWidth * 0.9;
+  const maxCanvasHeight = window.innerHeight * 0.7;
+
+  cellSize = Math.min(
+    Math.floor(maxCanvasWidth / gridWidth),
+    Math.floor(maxCanvasHeight / gridHeight)
+  );
+
+  canvas.width = gridWidth * cellSize;
+  canvas.height = gridHeight * cellSize;
+
+  drawGrid();
+  redrawPaths(); //redraw paths after resizing
+}
+
+//draw the grid
+function drawGrid() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = "#ddd"; //colour of grid lines
+
+  for (let x = 0; x < gridWidth; x++) {
+    for (let y = 0; y < gridHeight; y++) {
+      ctx.strokeRect(x * cellSize, y * cellSize, cellSize, cellSize);
+    }
+  }
+}
+
+//update the colour history
+function updateColourHistory(newColour) {
+  if (!colourArry.includes(newColour)) {
+    colourArry.push(newColour);
+    addColourToHistory(newColour);
+  }
+}
+
+//fill a pixel
+function fillPixel(x, y, colour) { //coords and colour
+  //convert hex to rgb for use with alpha
+  const r = parseInt(colour.slice(1, 3), 16); //extract first 2 hex chars and convert to decimal
+  const g = parseInt(colour.slice(3, 5), 16); //extract next 2 hex chars and convert to decimal
+  const b = parseInt(colour.slice(5, 7), 16); //extract last 2 hex chars and convert to decimal
+
+  //set RGBA colour using current alphaValue
+  ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alphaValue})`;
+  ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+}
+
+//keep track of the mouse position when transformed
+function getTransformedMousePos(e) {
+  //position and dimensions relative to the viewport
+  const rect = canvas.getBoundingClientRect();
+
+  //calc the mouse position in canvas coords considering the pan and scale
+  const mouseX = (e.clientX - rect.left - panX) / scale;
+  const mouseY = (e.clientY - rect.top - panY) / scale;
+
+  //return the transformed mouse position and round to the nearest grid cell
+  //dividing by cell size to get grid-based coordinates
+  return { x: Math.floor(mouseX / cellSize), y: Math.floor(mouseY / cellSize) };
+}
+
+//draw pixel from mouse event
+function drawPixelFromEvent(e, colour) {
+  //get the mouse position relative to the canvas after transformations
+  const { x, y } = getTransformedMousePos(e);
+
+  //check if the mouse position is within the grid boundaries
+  if (x >= 0 && x < gridWidth && y >= 0 && y < gridHeight) {
+    const radius = Math.floor(brushSize / 2); //define the brush radius based on brush size
+
+    //loop through the brush area around the mouse position
+    for (let dx = -radius; dx <= radius; dx++) {
+      for (let dy = -radius; dy <= radius; dy++) {
+        const px = x + dx; //calculate pixel position in x
+        const py = y + dy; //calculate pixel position in y
+
+        //ensure pixel is within grid boundaries
+        if (px >= 0 && px < gridWidth && py >= 0 && py < gridHeight) {
+          //check if the pixel falls within the circular brush area
+          if (dx * dx + dy * dy <= radius * radius) {
+            //if erasing, clear the pixel and update the points array
+            if (isErasing) {
+              ctx.clearRect(px * cellSize, py * cellSize, cellSize, cellSize);
+              //optionally draw the grid lines if enabled
+              if (showGrid) ctx.strokeRect(px * cellSize, py * cellSize, cellSize, cellSize);
+              points.push({ x: px, y: py, type: "erase" });
+            } else {
+              //if painting, fill the pixel with the selected color and update points array
+              fillPixel(px, py, colour);
+              points.push({ x: px, y: py, type: "paint", colour });
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+//function to add a colour to the colour history
+function addColourToHistory(colour) {
+  if (!colourArry.includes(colour)) {
+    colourArry.push(colour);
+
+    //create a new colour history box
+    const colourBox = document.createElement("div");
+    colourBox.style.backgroundColor = colour;
+    colourBox.classList.add("colour-box");
+    colourBox.title = colour; //tooltip for the colour
+
+    //allow selecting the colour from history
+    colourBox.addEventListener("click", () => {
+      colourPicker.value = colour;
+    });
+
+    //append to the history container
+    colourHistoryContainer.appendChild(colourBox);
+  }
+}
+
+//undo function
+function Undo() {
+  if (pathsry.length > 0) {
+    const lastPath = pathsry.pop();
+    redoStack.push(lastPath);
+    console.log(redoStack);
+    clearCanvas();
+    redrawPaths();
+  }
+}
+
+//redo function
+function Redo() {
+  if (redoStack.length > 0) {
+    const restoredPath = redoStack.pop();
+    pathsry.push(restoredPath);
+    clearCanvas();
+    redrawPaths();
+  }
+}
+
+//redraw all saved paths
+function redrawPaths() {
+  pathsry.forEach((path) => {
+    if (path.type === "erase") {
+      path.points.forEach((point) => {
+        ctx.clearRect(point.x * cellSize, point.y * cellSize, cellSize, cellSize);
+
+        //if grid is enabled, redraw grid lines after erasing
+        if (showGrid) {
+          ctx.strokeStyle = "#ddd";
+          ctx.strokeRect(point.x * cellSize, point.y * cellSize, cellSize, cellSize);
+        }
+      });
+    } else if (path.type === "paint") {
+      //bugfix alpha issues on redraw
+      ctx.save(); //save context before modifying
+      ctx.globalAlpha = path.alpha; //set correct alpha for this stroke
+      ctx.fillStyle = path.colour;
+
+      path.points.forEach((point) => {
+        ctx.fillRect(point.x * cellSize, point.y * cellSize, cellSize, cellSize);
+      });
+
+      ctx.restore(); //restore original state (resets alpha)
+    }
+  });
+}
+
+//mouse position detector
+function oMousePos(canvas, evt) {
+  const ClientRect = canvas.getBoundingClientRect();
+  return {
+    x: Math.round(evt.clientX - ClientRect.left),
+    y: Math.round(evt.clientY - ClientRect.top),
+  };
+}
+
+//clear the canvas and redraw grid
+function clearCanvas() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.globalAlpha = 1; //reset alpha to default
+if (showGrid) drawGrid();
+}
+
+//hide show help menu
+function toggleHelp() {
+  console.log("help toggled");
+
+  var helpDisp = document.getElementById("helpWin");
+  var blockDisp = document.getElementById("forHide");
+
+  helpDisp.classList.toggle('show');
+
+  if (blockDisp.style.display === "none") {
+    blockDisp.style.display = "block";
 
   } else {
-    move.style.display = "none";
+    blockDisp.style.display = "none";
   }
-});
+}
 
-//toggle colour with cool slider
-colToggleSwitch.addEventListener("change", () => {
-  console.log("colour togged");
+//hide show accessability menu
+function toggleAcc() {
+  console.log("accessability toggled");
 
-  //show / hide coords
+  var accDisp = document.getElementById("accWin");
+  var blockAccDisp = document.getElementById("forHide2");
 
-  if (colourMove.style.display === "none") {
-    colourMove.style.display = "block";
+  accDisp.classList.toggle('show');
+
+  if (blockAccDisp.style.display === "none") {
+    blockAccDisp.style.display = "block";
 
   } else {
-    colourMove.style.display = "none";
+    blockAccDisp.style.display = "none";
+  }
+}
+
+//function to restore colour history on load
+function restoreColourHistory() {
+  colourHistoryContainer.innerHTML = ""; //clear existing history
+  colourArry.forEach((colour) => {
+    const colourBox = document.createElement("div");
+    colourBox.style.backgroundColor = colour;
+    colourBox.classList.add("colour-box");
+    colourBox.title = colour;
+
+    //allow selecting the colour from history
+    colourBox.addEventListener("click", () => {
+      colourPicker.value = colour;
+      currentColour = colour;
+    });
+
+    //append to the history container
+    colourHistoryContainer.appendChild(colourBox);
+  });
+}
+
+//apply transformations
+function redrawTransformed() {
+  ctx.setTransform(scale, 0, 0, scale, panX, panY); //apply zoom & pan
+  ctx.clearRect(-panX / scale, -panY / scale, canvas.width / scale, canvas.height / scale);
+
+  //keep grid width thin
+  ctx.lineWidth = Math.max(0.5, 1 / scale);
+
+  redrawCanvas(); //redraw grid and drawings
+}
+/* end of functions */
+
+/* dark mode */
+//check if user has dark mode enabled in localStorage
+if (localStorage.getItem("darkmode") === "enabled") {
+  document.body.classList.add("darkmode");
+  darkModeToggle.checked = true;
+}
+
+//toggle dark mode on toggle switch
+darkModeToggle.addEventListener("change", () => {
+  if (darkModeToggle.checked) {
+    document.body.classList.add("darkmode");
+    localStorage.setItem("darkmode", "enabled");
+  } else {
+    document.body.classList.remove("darkmode");
+    localStorage.setItem("darkmode", "disabled");
   }
 });
+/* end dark mode */
+
+/* font size slider */
+//load saved font size from localStorage
+if (localStorage.getItem("fontSize")) {
+  let savedSize = localStorage.getItem("fontSize") + "px";
+  document.documentElement.style.fontSize = savedSize;
+  document.querySelectorAll("button").forEach((btn) => {
+    btn.style.fontSize = savedSize; //apply to buttons too
+  });
+  fontSizeSlider.value = localStorage.getItem("fontSize");
+  fontSizeValue.textContent = savedSize;
+}
+
+//update font size when slider changes live
+fontSizeSlider.addEventListener("input", () => {
+  let newSize = fontSizeSlider.value + "px";
+  document.documentElement.style.fontSize = newSize;
+
+  //also pdate all buttons
+  document.querySelectorAll("button").forEach((btn) => {
+    btn.style.fontSize = newSize;
+  });
+
+  fontSizeValue.textContent = newSize;
+  localStorage.setItem("fontSize", fontSizeSlider.value);
+});
+/* end font size slider */
+
 /*
-credits and sources:
-https://stackoverflow.com/questions/53960651/how-to-make-an-undo-function-in-canvas
-https://www.codicode.com/art/undo_and_redo_to_the_html5_canvas.aspx
-https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/color
-https://html.spec.whatwg.org/multipage/input.html#color-state-(type=color)
-https://stackoverflow.com/questions/10671174/changing-button-text-onclick
-https://www.w3schools.com/jsref/jsref_random.asp
-https://www.geeksforgeeks.org/how-to-create-keyboard-shortcuts-in-javascript/
-https://stackoverflow.com/questions/8126623/downloading-canvas-element-to-an-image
-https://www.youtube.com/watch?v=qOoZXaVN5Kk
-https://www.tutorialspoint.com/html5/canvas_states.htm
-https://stackoverflow.com/questions/20507534/how-to-save-and-load-html5-canvas-to-from-localstorage
-https://stackoverflow.com/questions/3665115/how-to-create-a-file-in-memory-for-user-to-download-but-not-through-server
-https://harrisonmilbradt.com/articles/canvas-panning-and-zooming
-https://stackoverflow.com/questions/38142308/canvas-drag-on-mouse-movement
-https://plnkr.co/edit/j8QCxwDzXJZN2DKszKwm?preview
-https://stackoverflow.com/questions/77628677/how-do-i-make-an-element-follow-the-mouse
-https://www.w3schools.com/graphics/canvas_coordinates.asp
-https://www.reddit.com/r/learnjavascript/comments/uyt2st/how_to_get_exact_coordinates_of_a_pixel_from_a/
-https://stackoverflow.com/questions/71669214/get-x-y-position-in-canvas
-https://www.w3schools.com/howto/howto_css_switch.asp
-https://bito.ai/resources/javascript-checkbox-onchange-javascript-explained/#:~:text=The%20element%20with%20type,run%20code%20when%20this%20happens.
+Please refer to my report for a comprehensive list of sources used in this project
 */

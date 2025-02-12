@@ -9,6 +9,11 @@ body {
   color: #292827;
 }
 
+body.darkmode {
+  background-color: dark-gray;
+  color: white;
+}
+
 div.mainHeader {
   width: 100%;
   height: 10vh;
@@ -42,11 +47,11 @@ button {
 button:hover {
   background-color: #517b4d;
   cursor: pointer;
-  box-shadow: 5px 5px 10px gray;
+  box-shadow: 5px 5px 10px black;
 }
 
 button:active {
-  box-shadow: 2px 2px 6px gray;
+  box-shadow: 2px 2px 6px black;
 }
 
 
@@ -158,7 +163,7 @@ div.helpWindow {
   height: 0;
   border-radius: 10px;
   background-color: white;
-  box-shadow: 10px 10px 15px gray;
+  box-shadow: 10px 10px 15px black;
   opacity: 0;
   transition: opacity 0.6s linear;
   z-index: 1;
@@ -212,14 +217,14 @@ div.show {
 }
 
 .help-left {
-  width: 50%;
+  width: 40%;
   display: inline-block;
   float: left;
   padding: 15px;
 }
 
 .help-right {
-  width: 50%;
+  width: 40%;
   display: inline-block;
   float: right;
   padding: 15px;
@@ -272,7 +277,7 @@ div.mainFooter {
     background: rgba(255, 255, 255, 0.5);
     padding: 5px;
     border-radius: 10px;
-    box-shadow: 5px 5px 15px gray;
+    box-shadow: 5px 5px 15px black;
     min-width: 140px;
 
 }
@@ -283,7 +288,7 @@ div.mainFooter {
     padding: 5px;
     width: 100px;
     border-radius: 10px;
-    box-shadow: 5px 5px 15px gray;
+    box-shadow: 5px 5px 15px black;
     border: 1px solid white;
 
 }
@@ -346,8 +351,10 @@ input:checked + .sliderTog:before {
 
 }
 
+/* end of toggle switches */
+
 input[type="color"] {
-  appearance: none; /* Removes default styles */
+  appearance: none;
   width: 30%;
   height: 40px;
   border: none;
@@ -357,6 +364,113 @@ input[type="color"] {
   border-radius: 100px;
 }
 
+.confirmWindow {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 300px;
+  background: white;
+  border-radius: 10px;
+  text-align: center;
+  box-shadow: 5px 5px 10px black;
+}
+
+.window-content p {
+  margin-bottom: 15px;
+}
+
+.confirmWindow button {
+  margin: 5px;
+  padding: 8px 15px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+#confirmYes {
+  background-color: #28a745;
+  color: white;
+}
+
+#confirmNo {
+  background-color: #dc3545;
+  color: white;
+}
+
+.window-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+}
+
+/* dark modes */
+body.darkmode {
+  background-color: #292827;
+  color: white;
+}
+
+.darkmode .mainHeader,
+.darkmode .mainFooter,
+.darkmode .helpTop {
+  background-color: #2f4f4f;
+}
+
+.darkmode .drawCanv {
+  background: #3a3a3a;
+}
+
+.darkmode #move {
+  background: rgba(68,68,68,0.5);
+
+}
+
+.darkmode .toolBar,
+.darkmode .colourPal,
+.darkmode .helpWindow {
+  background: #444;
+  color: white;
+}
+
+.darkmode button {
+  background-color: #2f4f4f;
+}
+
+.darkmode .closeButton {
+  background-color: rgba(10, 10, 10, 0.5);
+  color: white;
+}
+
+.darkmode .closeButton:hover {
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.3);
+
+}
+
+.darkmode button:hover {
+  background-color: #517b4d;
+}
+
+.darkmode .sliderTog {
+  background-color: #666;
+}
+
+.darkmode input[type="color"] {
+  background-color: #333;
+}
+
+.darkmode .confirmWindow,
+.darkmode .alertAnim {
+  background-color: #444;
+  color: white;
+}
+/* end of dark modes */
 
 
 /*custom font stored on server*/
