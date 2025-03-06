@@ -1,7 +1,7 @@
 * {
   margin: 0;
   padding: 0;
-  font-family: 'joystix'; /*set the default/fallback font*/
+  font-family: 'pixel-op'; /*set the default/fallback font*/
 }
 
 body {
@@ -31,11 +31,10 @@ span {
 }
 
 label {
-  font-family: 'joystix'; /*set the custom font*/
+
 }
 
 button {
-  font-family: 'joystix'; /*set the custom font*/
   color: #ffffff;
   padding: 10px;
   background-color: #517b7d;
@@ -56,8 +55,11 @@ button:active {
 
 
 input {
-  font-family: 'joystix'; /*set the custom font*/
   width: 70%;
+}
+
+input.scaleCheckbox {
+  width: auto;
 }
 
 h1.mainTitle {
@@ -81,29 +83,32 @@ div.content {
   display: inline-block;
   left: 0;
   width: 100%;
-  height: 100%;
+  min-height: 100%;
 }
 
 div.colourPal {
   float: left;
-  height: 100vh;
+  min-height: 100vh;
   width: 20%;
   background: white;
   text-align: center;
+  padding-bottom: 11px;
 }
 
 div.toolBar {
   float: left;
-  height: 100vh;
+  min-height: 100vh;
   width: 20%;
   background: white;
   text-align: center;
+  padding-bottom: 11px;
+
 }
 
 div.drawCanv {
   float: left;
   width: 60%;
-  height: 100vh;
+  min-height: 100vh;
   box-sizing: border-box;
   padding: 10px;
   background: #d3d3d3;
@@ -145,9 +150,6 @@ canvas {
   padding: 0;
   margin: 0;
   margin-right: 30px;
-  /*background-image: url('../img/help.png');
-  background-repeat: no-repeat;
-  background-size: cover;*/
 }
 
 .helpBtn:hover {
@@ -169,9 +171,24 @@ div.helpWindow {
   z-index: 1;
 }
 
+div.dlWindow {
+  margin: 0 auto;
+  position: absolute;
+  top: 15vh;
+  left: 15%;
+  width: 70%;
+  height: 0;
+  border-radius: 10px;
+  background-color: white;
+  box-shadow: 10px 10px 15px black;
+  opacity: 0;
+  transition: opacity 0.6s linear;
+  z-index: 1;
+}
+
 div.show {
   opacity: 1;
-  height: 50%;
+  height: auto;
 }
 
 .closeButton {
@@ -192,6 +209,14 @@ div.show {
 }
 
 .helpTop {
+  width: 100%;
+  height: 50px;
+  background-color: #517b7d;
+  display: flex;
+  border-radius: 10px 10px 0px 0px;
+  z-index: 999;
+}
+.dlTop {
   width: 100%;
   height: 50px;
   background-color: #517b7d;
@@ -258,8 +283,20 @@ div.showAlert {
   border-radius: 10px 10px 0px 0px;
 }
 
-.alert {
+.dl-inner {
+  width: 95%;
+  height: 95%;
+  margin: 30px;
+  display: inline-block;
+  z-index: 999;
+}
 
+.dlTitle {
+  position: absolute;
+  top: 8px;
+  left: 15px;
+  color: white;
+  z-index: 999;
 }
 
 div.mainFooter {
@@ -300,6 +337,10 @@ div.mainFooter {
   display: inline-block;
   width: 50px;
   height: 24px;
+}
+
+span.toggleText {
+  font-size: 12pt;
 }
 
 /* hide default checkbox */
@@ -358,10 +399,8 @@ input[type="color"] {
   width: 30%;
   height: 40px;
   border: none;
-  padding: 0;
   background: none;
   cursor: pointer;
-  border-radius: 100px;
 }
 
 .confirmWindow {
@@ -411,6 +450,83 @@ input[type="color"] {
   z-index: 999;
 }
 
+#brushPreview {
+  position: fixed;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  pointer-events: none; /* prevent interaction */
+  transform: translate(-50%, -50%);
+  border: 1px solid black;
+  outline: 1px solid white;
+}
+
+.titleSpacer {
+  width: 64px;
+  height: 32px;
+  padding: 0;
+  margin: 0;
+}
+
+/* custom checkbox */
+.customCheckbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 16px;
+  font-family: 'joystix';
+  user-select: none;
+  margin: 5px 0;
+  transition: 0.3s;
+}
+
+/*hide the default checkbox */
+.customCheckbox input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.checkmark {
+  width: 20px;
+  height: 20px;
+  background: white;
+  border: 2px solid #517b7d;
+  border-radius: 4px;
+  display: inline-block;
+  position: relative;
+  transition: 0.3s;
+}
+
+.customCheckbox:hover .checkmark {
+  background: #cce7e8;
+}
+
+.customCheckbox input:checked + .checkmark {
+  background: #517b7d;
+  border-color: #517b7d;
+}
+
+.customCheckbox input:checked + .checkmark::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 2px;
+  width: 6px;
+  height: 12px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.sizeLabel {
+  font-size: 14px;
+  font-weight: normal;
+}
+/* end checkboxes */
+
 /* dark modes */
 body.darkmode {
   background-color: #292827;
@@ -434,7 +550,8 @@ body.darkmode {
 
 .darkmode .toolBar,
 .darkmode .colourPal,
-.darkmode .helpWindow {
+.darkmode .helpWindow,
+.darkmode .dlWindow {
   background: #444;
   color: white;
 }
@@ -461,10 +578,6 @@ body.darkmode {
   background-color: #666;
 }
 
-.darkmode input[type="color"] {
-  background-color: #333;
-}
-
 .darkmode .confirmWindow,
 .darkmode .alertAnim {
   background-color: #444;
@@ -473,8 +586,14 @@ body.darkmode {
 /* end of dark modes */
 
 
+
 /*custom font stored on server*/
 @font-face {
     font-family: 'joystix';
     src: url('fonts/joystix_monospace.otf');
+}
+
+@font-face {
+    font-family: 'pixel-op';
+    src: url('fonts/PixelOperatorMono.ttf');
 }

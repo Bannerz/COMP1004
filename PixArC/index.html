@@ -13,10 +13,11 @@
   </head>
   <body>
     <div class="mainHeader">
+      <div class="titleSpacer"></div>
+      <div class="titleSpacer"></div>
       <h1 class="mainTitle">Pix/Ar/C</h1>
       <button class="helpBtn" title="Click me for a tutorial or help" onclick="toggleHelp()">?</button>
       <button class="helpBtn" title="Click me for accessability" onclick="toggleAcc()"><img src="img/acc.png" /></button>
-
     </div>
     <div class="content">
       <div class="toolBar">
@@ -54,19 +55,24 @@
             <input type="checkbox" id="gridToggleSwitch" checked>
             <span class="sliderTog"></span>
           </label>
-          <span>Show Grid</span>
+          <span class="toggleText">Show Grid</span>
             <br>
             <br>
           <label class="switch">
             <input type="checkbox" id="coordsToggleSwitch" checked>
             <span class="sliderTog"></span>
           </label>
-          <span>Show Coords</span>
-
+          <span class="toggleText">Show Coords</span>
         </div>
           <br>
           <br>
         <button id="resetView">Reset View</button>
+          <br>
+          <br>
+        <button id="saveBtn">Save state</button>
+          <br>
+          <br>
+        <button id="loadBtn">Load state</button>
       </div>
       <div class="drawCanv">
         <h1 class="panelTitle">Drawing Canvas</h1>
@@ -76,7 +82,7 @@
             <h2>Y</h2>
           </div>
           <div style="">
-            <canvas id="pixelCanvas"></canvas>
+            <canvas id="pixelCanvas" ondragover="event.preventDefault()" ondrop="handleImageDrop(event)"></canvas>
               <br>
             <h2>X</h2>
           </div>
@@ -84,13 +90,7 @@
           <br>
         <button id="undo">Undo</button>
         <button id="redo">Redo</button>
-        <button id="downloadBtn">Download as PNG</button>
-          <br>
-          <br>
-        <button id="saveBtn">Save state</button>
-        <button id="loadBtn">Load state</button>
-          <br>
-          <br>
+        <button id="dlDiagBtn" onclick="toggleDl()">Download!</button>
         <script src="pixarc.js" type="text/javascript" defer></script>
       </div>
       <div class="colourPal">
@@ -114,10 +114,11 @@
             <input type="checkbox" id="colToggleSwitch" checked>
             <span class="sliderTog"></span>
           </label>
-          <span>Show Colour</span>
+          <span class="toggleText">Show Colour</span>
         </div>
           <br>
-        <div id="colourHistory" style="display: flex; margin-top: 10px;"></div>
+        <h4>Colour History</h4>
+        <div id="colourHistory" style="display: flex; margin-top: 10px; max-height: 400px; overflow: auto; background: #4F4F4F;"></div>
       </div>
     </div>
     <div class="helpWindow" id="helpWin">
@@ -131,7 +132,6 @@
             <h3>Keyboard shortcuts</h3>
               <br>
             <ul>
-              <li>C - Clear the canvas</li>
               <li>Left/Right Arrow Keys - Undo/Redo</li>
               <li>Shift + Scroll Wheel - Zoom in & out</li>
               <li>Shift + Click & Drag - Pan canvas</li>
@@ -146,15 +146,18 @@
             <li>Toggle the grid lines if they are in your way!</li>
             <li>Same goes for the coordinates and colour view!</li>
             <li>Want a dark mode? Check the accessability settings!</li>
+            <li>Got an image you want to edit? Just drag and drop it onto the canvas!</li>
           </ul>
         </div>
         </div>
       </div>
     </div>
+
+    <!-- alert box -->
     <div class="alertAnim" id="alertWin">
       <div id="alertForHide" style="display: none;">
         <div class="alertBar">
-          <h3>Alert!</h3>
+          <h3 style="font-family: joystix;">Alert!</h3>
         </div>
         <h3 class="alert" id="alertText"></h3>
         <h4 class="alert" id="secondTextWidth"></h4>
@@ -165,7 +168,7 @@
     <!-- confirmation window -->
     <div id="confirmWin" class="confirmWindow">
       <div class="alertBar">
-        <h3>Alert!</h3>
+        <h3 style="font-family: joystix;">Alert!</h3>
       </div>
       <div class="window-content">
         <p id="confirmText">Are you sure you want to regenerate the canvas? This will erase all current drawings.</p>
@@ -181,7 +184,7 @@
     <div class="helpWindow" id="accWin">
       <div id="forHide2" style="display: none;">
         <div class="helpTop">
-          <h2 class="helpTitle">accessability options</h2>
+          <h2 class="helpTitle" style="font-family: joystix;">Accessability Options</h2>
           <button class="closeButton" id="closeAccBtn" onclick="toggleAcc()">X</button>
         </div>
         <div class="help-inner">
@@ -205,11 +208,62 @@
         </div>
       </div>
     </div>
+    <!-- end accessability -->
+
+    <!-- download diaglogue -->
+    <div class="dlWindow" id="dlWin">
+      <div id="forHide3" style="display: none;">
+        <div class="dlTop">
+          <h2 class="dlTitle" style="font-family: joystix;">Download Options</h2>
+          <button class="closeButton" id="closeAccBtn" onclick="toggleDl()">X</button>
+        </div>
+        <div class="dl-inner">
+          <p>Download your image as a PNG! Use the check boxes to choose which size(s) you want to download! (example: 1x=16x16, 2x=32x32, etc.)</p>
+            <br>
+          <p>Select PNG scale:</p>
+          <label class="customCheckbox">
+            <input type="checkbox" class="scaleCheckbox" value="1" checked>
+            <span class="checkmark"></span> 1x <span class="sizeLabel" data-scale="1"></span>
+          </label>
+          <label class="customCheckbox">
+            <input type="checkbox" class="scaleCheckbox" value="2">
+            <span class="checkmark"></span> 2x <span class="sizeLabel" data-scale="2"></span>
+          </label>
+          <label class="customCheckbox">
+            <input type="checkbox" class="scaleCheckbox" value="3">
+            <span class="checkmark"></span> 3x <span class="sizeLabel" data-scale="3"></span>
+          </label>
+          <label class="customCheckbox">
+            <input type="checkbox" class="scaleCheckbox" value="4">
+            <span class="checkmark"></span> 4x <span class="sizeLabel" data-scale="4"></span>
+          </label>
+          <label class="customCheckbox">
+            <input type="checkbox" class="scaleCheckbox" value="5">
+            <span class="checkmark"></span> 5x <span class="sizeLabel" data-scale="5"></span>
+          </label>
+          <label class="customCheckbox">
+            <input type="checkbox" class="scaleCheckbox" value="6">
+            <span class="checkmark"></span> 6x <span class="sizeLabel" data-scale="6"></span>
+          </label>
+            <br>
+          <label>Custom Scale:
+            <input type="number" id="customScale" min="1" step="0.1" placeholder="Enter scale">
+            <span id="customSizeLabel"></span>
+          </label>
+            <br>
+            <br>
+          <button id="downloadScaledPng">Download</button>
+        </div>
+      </div>
+    </div>
+    <!-- end download dialogue -->
+
     <div class="mainFooter">
-      <p>Copyright &copy 2025 Alex Banfield | Pix/Ar/C</p>
+      <p>Copyright &copy 2025 Alex Banfield | <span style="font-family: joystix;">Pix/Ar/C</span></p>
     </div>
 
     <div id="move" style="display: block;"></div>
     <div id="colourMove" style="display: block;"></div>
+    <div id="brushPreview"></div>
   </body>
 </html>

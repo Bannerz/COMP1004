@@ -19,7 +19,6 @@ const redoButton = document.getElementById("redo");
 const colourHistoryContainer = document.getElementById("colourHistory");
 const alphaSlider = document.getElementById("alphaSlider");
 const rgbaDisplay = document.getElementById("rgbaDisplay");
-const downloadBtn = document.getElementById("downloadBtn");
 const paintBtn = document.getElementById("paintBtn");
 const eraseBtn = document.getElementById("eraseBtn");
 const saveBtn = document.getElementById("saveBtn");
@@ -41,6 +40,11 @@ const confirmNo = document.getElementById("confirmNo");
 const darkModeToggle = document.getElementById("darkModeToggle");
 const fontSizeSlider = document.getElementById("fontSizeSlider");
 const fontSizeValue = document.getElementById("fontSizeValue");
+const brushPreview = document.getElementById("brushPreview");
+const dlDiagBtn = document.getElementById("dlDiagBtn");
+const downloadScaledPng = document.getElementById("downloadScaledPng");
+const MAX_CANVAS_WIDTH = 1000;
+const MAX_CANVAS_HEIGHT = 800;
 
 const ctx = canvas.getContext("2d");
 
@@ -75,7 +79,7 @@ let gridWidth, gridHeight, cellSize;
 let isDrawing = false;
 let showGrid = true; //flag to control grid visibility
 
-let confirmUnload = true; // Control whether to warn the user
+let confirmUnload = true; //set unload confirmation flag
 
 //variabels for zoom and pan feature
 let scale = 1; //default scale
@@ -211,6 +215,8 @@ confirmYes.addEventListener("click", () => {
   generateBtn.innerHTML = "Regenerate Canvas";
 
   resizeCanvas(); //resize the canvas
+  brushSizePreviewUpdate(); //update brush preview on regen
+  updateScaleSizes(); //update labels
 });
 
 //if no
@@ -256,7 +262,10 @@ canvas.addEventListener("mousemove", (e) => {
   const gridY = Math.max(0, Math.min(gridHeight - 1, Math.floor(y)));
 
   //display the coords in the following div
-  move.innerText = `X: ${gridX}, Y: ${gridY}`;
+  move.innerText = `X: ${gridX}, Y: ${gridY}`; //use this for slightly animated
+
+  brushPreview.style.left = `${e.clientX}px`;
+  brushPreview.style.top = `${e.clientY}px`;
 
   colourMove.style.backgroundColor = currentColour;
 });
@@ -294,6 +303,8 @@ canvas.addEventListener("mouseleave", () => {
   move.innerText = "X: -, Y: -"; //set the coords display to nothing when not in the canvas
   isPanning = false;
   canvas.style.cursor = "default";
+
+  brushPreview.style.display = "none"; //hide brush
 });
 
 //check if brushSizeValue exists
@@ -315,6 +326,7 @@ window.addEventListener("load", () => {
   heightInput.value = gridHeight;
 
   resizeCanvas(); //ensure the canvas is properly sized
+  brushSizePreviewUpdate() //update brush preview on load
 });
 
 //event listeners for undo/redo buttons
@@ -338,46 +350,87 @@ alphaSlider.addEventListener("input", (e) => {
   updateRGBAColour();
 });
 
-//download png logic on button click
-downloadBtn.addEventListener("click", () => {
-  //create an offscreen canvas with grid size in pixels
+//new download
+downloadScaledPng.addEventListener("click", () => {
+  console.log("download button pressed");
+  const checkboxes = document.querySelectorAll(".scaleCheckbox:checked"); //get checked scales
+  const customScaleInput = document.getElementById("customScale").value; //get custom scale
+
+  let scales = [...checkboxes].map(cb => parseFloat(cb.value)); //convert checked values to numbers
+
+  //add custom scale if exists and valid
+  if (customScaleInput && !isNaN(customScaleInput) && customScaleInput > 0) {
+    scales.push(parseFloat(customScaleInput));
+  }
+
+  if (scales.length === 0) {
+    alert("Please select at least one scale.");
+    return;
+  }
+
+  scales.forEach(scale => downloadPngAtScale(scale)); //download each selected scale
+});
+
+function downloadPngAtScale(scaleFactor) {
+  const maxWidthScale = Math.floor(3840 / gridWidth);
+  const maxHeightScale = Math.floor(2160 / gridHeight);
+  const maxScale = Math.min(maxWidthScale, maxHeightScale);
+
+  if (scaleFactor > maxScale) {
+    alert(`Scale ${scaleFactor}x exceeds 4K resolution! Maximum allowed scale is ${maxScale}x.`);
+    return;
+  }
+
+  const finalWidth = gridWidth * scaleFactor;
+  const finalHeight = gridHeight * scaleFactor;
+
   const offscreenCanvas = document.createElement("canvas");
-  offscreenCanvas.width = gridWidth;
-  offscreenCanvas.height = gridHeight;
+  offscreenCanvas.width = finalWidth;
+  offscreenCanvas.height = finalHeight;
   const offscreenCtx = offscreenCanvas.getContext("2d");
 
-  offscreenCtx.clearRect(0, 0, offscreenCanvas.width, offscreenCanvas.height);
+  //prevent antialiasing
+  offscreenCtx.imageSmoothingEnabled = false;
 
-  //scale down cell size to fit the user defined pixel grid
-  const scaleFactor = 1 / cellSize; //ensure scaling
+
+  //scale before drawing
   offscreenCtx.scale(scaleFactor, scaleFactor);
 
-  //redraw all saved paths from pathsry and make sure erased paths are maintained
+  //redraw all saved paths
   pathsry.forEach((path) => {
     if (path.type === "paint") {
       offscreenCtx.globalAlpha = path.alpha;
       offscreenCtx.fillStyle = path.colour;
       path.points.forEach((point) => {
-        offscreenCtx.fillRect(point.x * cellSize, point.y * cellSize, cellSize, cellSize);
+        offscreenCtx.fillRect(
+          Math.round(point.x),
+          Math.round(point.y),
+          1, 1 //each grid cell is 1px in the scaled base image
+        );
       });
-      offscreenCtx.globalAlpha = 1; //reset alpha
     } else if (path.type === "erase") {
       path.points.forEach((point) => {
-        offscreenCtx.clearRect(point.x * cellSize, point.y * cellSize, cellSize, cellSize);
+        offscreenCtx.clearRect(
+          Math.round(point.x),
+          Math.round(point.y),
+          1, 1
+        );
       });
     }
   });
 
-  //convert offscreen canvas to a PNG
+  offscreenCtx.globalAlpha = 1; //reset alpha
+
+  //convert to PNG
   const imageData = offscreenCanvas.toDataURL("image/png");
 
-  //create a download link
+  //create the download link
   const downloadLink = document.createElement("a");
   downloadLink.href = imageData;
-  downloadLink.download = `PixArC_${gridWidth}x${gridHeight}_${Math.floor((Math.random() * 100000) + 1)}.png`;
+  downloadLink.download = `PixArc_${gridWidth}x${gridHeight}_${scaleFactor}x_${Math.floor((Math.random() * 100000) + 1)}.png`;
   downloadLink.click();
 
-  console.log("File downloaded");
+  console.log(`File downloaded at ${scaleFactor}x scale.`);
 
   //show alert
   var alertWin = document.getElementById("alertWin");
@@ -393,16 +446,51 @@ downloadBtn.addEventListener("click", () => {
     alertForHide.style.display = "none";
     alertText.innerHTML = "";
   }, 3000);
-});
+}
+
+//update size displays
+function updateScaleSizes() {
+
+  const maxWidthScale = Math.floor(3840 / gridWidth); //max scale based on width (up to 4k)
+  const maxHeightScale = Math.floor(2160 / gridHeight); //max scale based on height (up to 4k)
+  const maxScale = Math.min(maxWidthScale, maxHeightScale); //use the smallest value to fit within 4K
+
+  document.querySelectorAll(".sizeLabel").forEach(label => {
+    let scaleFactor = parseFloat(label.dataset.scale);
+    let width = gridWidth * scaleFactor;
+    let height = gridHeight * scaleFactor;
+
+    if (scaleFactor > maxScale) {
+      label.parentElement.style.display = "none"; //hide scale options that are larger than 4K
+    } else {
+      label.parentElement.style.display = "block"; //show valid scale options
+      label.textContent = `(${width}px x ${height}px)`;
+    }
+  });
+
+  //update scale field
+  const customScaleInput = document.getElementById("customScale");
+   const customSizeLabel = document.getElementById("customSizeLabel");
+
+   customScaleInput.max = maxScale; //prevent user from entering an invalid scale
+   customScaleInput.addEventListener("input", () => {
+     let customScale = parseFloat(customScaleInput.value);
+     if (!isNaN(customScale) && customScale > 0 && customScale <= maxScale) {
+       let customWidth = Math.round(gridWidth * customScale);
+       let customHeight = Math.round(gridHeight * customScale);
+       customSizeLabel.textContent = `(${customWidth}px x ${customHeight}px)`;
+     } else {
+       customSizeLabel.textContent = customScale > maxScale ? "(Exceeds 4K limit)" : "";
+     }
+   });
+}
+
+//run the update function on page load
+window.addEventListener("load", updateScaleSizes);
+
+//end new download
 
 /*keyboard shortcut event listeners */
-//clear
-document.addEventListener("keydown", (e) => {
-  if (e.key === "c" || e.key === "C") {
-    clearCanvas();
-    resizeCanvas();
-  }
-});
 
 //undo
 document.addEventListener("keydown", (e) => {
@@ -443,19 +531,26 @@ resetView.addEventListener("click", () => {
   panX = 0;
   panY = 0;
   scale = 1;
+  brushSizePreviewUpdate(); //update brush size when view reset
   redrawTransformed();
   console.log("reset button clicked");
 });
 
 //zoom functionality with mouse wheel
 canvas.addEventListener("wheel", (e) => {
+  console.log("deltaX:", e.deltaX, "deltaY:", e.deltaY);
+
   if (!shiftPressed) return; //prevent zoom if shift not pressed
 
   e.preventDefault();
   const zoomFactor = 1.1;
   const mouseX = e.offsetX;
   const mouseY = e.offsetY;
-  const zoomIn = e.deltaY < 0;
+
+  //fix glitch where mouse wheel when shift pressed doesnt zoom out bc of deltaX and deltaY switching
+  const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+  const zoomIn = delta < 0;
+
 
   //new scale
   const newScale = zoomIn ? scale * zoomFactor : scale / zoomFactor;
@@ -469,6 +564,7 @@ canvas.addEventListener("wheel", (e) => {
   scale = newScale;
 
   redrawTransformed();
+  brushSizePreviewUpdate(); //resize brush on zoom
 });
 
 //save the canvas state
@@ -615,6 +711,19 @@ document.body.onpointermove = event => {
 
 }
 
+//show brush preview when entering the canvas
+canvas.addEventListener("mouseenter", () => {
+  brushPreview.style.display = "block";
+});
+
+//update brush size when the slider changes
+brushSizeSlider.addEventListener("input", (e) => {
+  brushSize = parseInt(e.target.value, 10);
+  brushSizePreviewUpdate();
+});
+
+window.addEventListener("resize", resizeCanvas);
+
 /* end of listeners */
 
 /* start of functions */
@@ -646,17 +755,55 @@ function resizeCanvas() {
   const maxCanvasWidth = container.clientWidth * 0.9;
   const maxCanvasHeight = window.innerHeight * 0.7;
 
-  cellSize = Math.min(
-    Math.floor(maxCanvasWidth / gridWidth),
-    Math.floor(maxCanvasHeight / gridHeight)
+
+  //maintain aspect ratio
+  const aspectRatio = gridWidth / gridHeight;
+  let newWidth = maxCanvasWidth;
+  let newHeight = newWidth / aspectRatio;
+
+  //if the height exceeds the max height scale down
+  if (newHeight > maxCanvasHeight) {
+    newHeight = maxCanvasHeight;
+    newWidth = newHeight * aspectRatio;
+  }
+
+  //prevent cellSize from being too small
+  const calculatedCellSize = Math.min(
+    Math.floor(newWidth / gridWidth),
+    Math.floor(newHeight / gridHeight)
   );
 
-  canvas.width = gridWidth * cellSize;
-  canvas.height = gridHeight * cellSize;
+  cellSize = Math.max(calculatedCellSize, 1); //ensure minimum cell size is 1px
+
+  //set canvas size
+  canvas.width = Math.min(gridWidth * cellSize, maxCanvasWidth);
+  canvas.height = Math.min(gridHeight * cellSize, maxCanvasHeight);
 
   drawGrid();
   redrawPaths(); //redraw paths after resizing
 }
+
+
+//draw the grid
+function drawGrid() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = "#ddd"; //colour of grid lines
+
+  for (let x = 0; x < gridWidth; x++) {
+    for (let y = 0; y < gridHeight; y++) {
+      ctx.strokeRect(x * cellSize, y * cellSize, cellSize, cellSize);
+    }
+  }
+}
+
+//update the colour history
+function updateColourHistory(newColour) {
+  if (!colourArry.includes(newColour)) {
+    colourArry.push(newColour);
+    addColourToHistory(newColour);
+  }
+}
+
 
 //draw the grid
 function drawGrid() {
@@ -755,6 +902,9 @@ function addColourToHistory(colour) {
     //allow selecting the colour from history
     colourBox.addEventListener("click", () => {
       colourPicker.value = colour;
+      currentColour = colour;  //set current colour
+      colourMove.style.backgroundColor = colour; //update the box
+      updateRGBAColour(); //make sure rgba is correct
     });
 
     //append to the history container
@@ -803,6 +953,7 @@ function redrawPaths() {
       ctx.fillStyle = path.colour;
 
       path.points.forEach((point) => {
+        ctx.fillStyle = point.colour; //redraw with colours
         ctx.fillRect(point.x * cellSize, point.y * cellSize, cellSize, cellSize);
       });
 
@@ -861,6 +1012,23 @@ function toggleAcc() {
   }
 }
 
+//hide show download menu
+function toggleDl() {
+  console.log("dl toggled");
+
+  var dlDisp = document.getElementById("dlWin");
+  var blockdlDisp = document.getElementById("forHide3");
+
+  dlDisp.classList.toggle('show');
+
+  if (blockdlDisp.style.display === "none") {
+    blockdlDisp.style.display = "block";
+
+  } else {
+    blockdlDisp.style.display = "none";
+  }
+}
+
 //function to restore colour history on load
 function restoreColourHistory() {
   colourHistoryContainer.innerHTML = ""; //clear existing history
@@ -886,10 +1054,143 @@ function redrawTransformed() {
   ctx.setTransform(scale, 0, 0, scale, panX, panY); //apply zoom & pan
   ctx.clearRect(-panX / scale, -panY / scale, canvas.width / scale, canvas.height / scale);
 
-  //keep grid width thin
+  //keep grid lines thin
   ctx.lineWidth = Math.max(0.5, 1 / scale);
 
   redrawCanvas(); //redraw grid and drawings
+}
+
+//update brush preview size
+function brushSizePreviewUpdate() {
+  const size = brushSize * cellSize * scale; //ensure brush size corresponds to cell size
+  brushPreview.style.width = `${size}px`;
+  brushPreview.style.height = `${size}px`;
+}
+
+//function to handle image dropping
+function handleImageDrop(event) {
+  event.preventDefault();
+
+  const file = event.dataTransfer.files[0]; //get dropped file
+  if (!file || !file.type.startsWith("image/")) {
+    console.warn("Not an image!");
+
+    var alertWin = document.getElementById("alertWin");
+    var alertForHide = document.getElementById("alertForHide");
+
+    alertWin.classList.add("showAlert");
+    alertForHide.style.display = "block";
+
+    alertText.innerHTML = "Please only upload image files!";
+
+    //hide alert after 3 seconds
+    setTimeout(() => {
+      alertWin.classList.remove("showAlert");
+      alertForHide.style.display = "none";
+      secondTextWidth.innerHTML = "";
+      secondTextHeight.innerHTML = "";
+      alertText.innerHTML = "";
+    }, 3000);
+    return; //make sure it is an image
+  } else {
+    console.warn("Image loaded!");
+
+    var alertWin = document.getElementById("alertWin");
+    var alertForHide = document.getElementById("alertForHide");
+
+    alertWin.classList.add("showAlert");
+    alertForHide.style.display = "block";
+
+    alertText.innerHTML = "Image added successfully!";
+
+    //hide alert after 3 seconds
+    setTimeout(() => {
+      alertWin.classList.remove("showAlert");
+      alertForHide.style.display = "none";
+      secondTextWidth.innerHTML = "";
+      secondTextHeight.innerHTML = "";
+      alertText.innerHTML = "";
+    }, 3000);
+  }
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image(); //create img object
+    img.src = e.target.result;
+    img.onload = () => processImage(img); //process image when loaded
+  };
+  reader.readAsDataURL(file);
+}
+
+//convert rgba to hex function
+function rgbaToHex(r, g, b) {
+  return `#${((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1)}`; //convert to #rrggbb to avoid NaN issue on colour select
+}
+
+//drag and drop image function
+function processImage(img) { //pass image object to processImage
+  let imgWidth = img.width;
+  let imgHeight = img.height;
+  //scale down large images and keep aspect ratio
+  if (imgWidth > MAX_CANVAS_WIDTH || imgHeight > MAX_CANVAS_HEIGHT) {
+    const scaleFactor = Math.min(MAX_CANVAS_WIDTH / imgWidth, MAX_CANVAS_HEIGHT / imgHeight);
+    imgWidth = Math.floor(imgWidth * scaleFactor);
+    imgHeight = Math.floor(imgHeight * scaleFactor);
+  }
+
+  //resize canvas to match image dimensions
+  gridWidth = imgWidth;
+  gridHeight = imgHeight;
+  canvas.width = gridWidth;
+  canvas.height = gridHeight;
+  //update text fields
+  widthInput.value = gridWidth;
+  heightInput.value = gridHeight;
+  resizeCanvas(); //update grid
+
+  const tempCanvas = document.createElement("canvas"); //create temporary canvas
+  const tempCtx = tempCanvas.getContext("2d"); //set temporary canvas context
+
+  tempCanvas.width = gridWidth; //set temp width
+  tempCanvas.height = gridHeight; //set temp height
+  tempCtx.imageSmoothingEnabled = false; //prevent antialiasing
+
+  //draw the image onto the temp canvas
+  tempCtx.drawImage(img, 0, 0, gridWidth, gridHeight);
+
+  //gather pixel data
+  const imageData = tempCtx.getImageData(0, 0, gridWidth, gridHeight);
+  const data = imageData.data;
+
+  let newPaths = []; //define new paths array
+  let uniqueColours = new Set(); //define the nw colour set
+
+  for (let y = 0; y < gridHeight; y++) {
+    for (let x = 0; x < gridWidth; x++) {
+      const index = (y * gridWidth + x) * 4;
+      const r = data[index];
+      const g = data[index + 1];
+      const b = data[index + 2];
+      const a = data[index + 3];
+
+      if (a > 0) { //ignore transparent pixels
+        const hexColour = rgbaToHex(r, g, b);
+        newPaths.push({ x, y, colour: hexColour, alpha: a / 255 });
+
+        //store unique colours in the history
+        if (!uniqueColours.has(hexColour)) {
+          uniqueColours.add(hexColour);
+          addColourToHistory(hexColour);
+        }
+      }
+    }
+  }
+
+  //add the image pixels as an editable path
+  pathsry.push({ type: "paint", points: newPaths });
+
+  redrawPaths(); //update canvas with the new image data
+  brushSizePreviewUpdate(); //update brush size to match cell size
 }
 /* end of functions */
 
@@ -929,7 +1230,7 @@ fontSizeSlider.addEventListener("input", () => {
   let newSize = fontSizeSlider.value + "px";
   document.documentElement.style.fontSize = newSize;
 
-  //also pdate all buttons
+  //also update all buttons
   document.querySelectorAll("button").forEach((btn) => {
     btn.style.fontSize = newSize;
   });
