@@ -783,28 +783,6 @@ function resizeCanvas() {
   redrawPaths(); //redraw paths after resizing
 }
 
-
-//draw the grid
-function drawGrid() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.strokeStyle = "#ddd"; //colour of grid lines
-
-  for (let x = 0; x < gridWidth; x++) {
-    for (let y = 0; y < gridHeight; y++) {
-      ctx.strokeRect(x * cellSize, y * cellSize, cellSize, cellSize);
-    }
-  }
-}
-
-//update the colour history
-function updateColourHistory(newColour) {
-  if (!colourArry.includes(newColour)) {
-    colourArry.push(newColour);
-    addColourToHistory(newColour);
-  }
-}
-
-
 //draw the grid
 function drawGrid() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
